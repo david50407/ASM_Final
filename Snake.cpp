@@ -392,72 +392,6 @@ void move()
 		}
 	}
 }
-void readdata()
-{
-	FILE *f;
-	if(access("config.txt",0))
-	{
-		f=fopen("config.txt","w");
-		fprintf(f,"Speed(1~10):5\nLife(1~9):3\nPlayer(1~2):1\nMap:1");
-		speed=50;
-		life=3;
-		strcpy(map,"1");
-	}
-	else
-	{
-	    f=fopen("config.txt","r");
-		fscanf(f,"Speed(1~10):%d",&speed);
-		speed=250/speed;
-		fscanf(f,"\nLife(1~9):%d",&life);
-		life2=life;
-		fscanf(f,"\nPlayer(1~2):%d",&player);
-		fscanf(f,"\nMap:%s",map);
-	}
-	fclose(f);
-	if(access("map",0))
-		_mkdir("map");
-	if(access("map\\1.map",0))
-	{
-		f=fopen("map\\1.map","w");
-		for(int i=0;i!=23;i++)
-		{
-			for(int j=0;j!=40;j++)
-				fputc('0',f);
-			fputc('\n',f);
-		}
-	}
-	if(access("map\\2.map",0))
-	{
-		fclose(f);
-		f=fopen("map\\2.map","w");
-		for(int i=0;i!=40;i++)
-            fputc('1',f);
-        fputc('\n',f);
-		for(int i=0;i!=21;i++)
-		{
-		    fputc('1',f);
-			for(int j=0;j!=38;j++)
-				fputc('0',f);
-            fputc('1',f);
-			fputc('\n',f);
-		}
-		for(int i=0;i!=40;i++)
-            fputc('1',f);
-		fclose(f);
-	}
-	char t[100];
-	strcpy(t,map);
-	strcpy(map,"map\\");
-	strcat(map,t);
-    strcat(map,".map");
-    f=fopen(map,"r");
-    for(int i=0;i!=23;i++)
-    {
-        for(int j=0;j!=40;j++)
-            s[j][i][0]=fgetc(f)-'0'-1;
-        fgetc(f);
-    }
-}
 void paint(char x,char y,char route[])
 {
 	head[0]=x;
@@ -539,7 +473,12 @@ void gameover()
 }
 void initialize()
 {
-	readdata();
+	speed=50;
+	life=3;
+    for(int i=0; i!=23; i++)
+        for(int j=0; j!=40; j++)
+            s[j][i][0]=-1;
+
 	s[18][9][0]=19;
 	s[18][9][1]=9;
 	s[19][9][0]=20;
