@@ -20,8 +20,8 @@ initialize   PROTO
 
 .data
 gameWidth = 40
-gameHeight = 23
-map           BYTE gameWidth * gameHeight * 2 dup(?)
+gameHeight = 22
+map           SBYTE gameWidth * gameHeight * 2 dup(?)
 head          BYTE ?, ?
 tail          BYTE ?, ?
 direct        BYTE ?, ?
@@ -48,6 +48,8 @@ pressEnter    BYTE "Press Enter", 0
 idk           BYTE "¢i", 0
 space         BYTE " ", 0
 space2        BYTE "  ", 0
+space13       BYTE "             ", 0
+
 headP1Image   BYTE "¡·", 0
 headP2Image   BYTE "¡ó", 0
 bodyImage     BYTE "¡´", 0
@@ -208,79 +210,47 @@ printMapItem PROC USES eax ebx,
 printMapItem ENDP
 
 ;--------------------------------
-turn PROC USES eax ebx edx esi edi
+turn PROC USES eax ebx edx
 ;turn the snake's direction
 ;--------------------------------
 START_turn:
 
    call crt__getch
-   .IF over == 1
-        jmp END_turn
-   .ENDIF
 
-   mov edi, OFFSET direct
-   mov esi, OFFSET forbidDirect
+   .IF over
+      jmp END_turn
+   .ENDIF
 
    .IF player == 2
-      
       ; do until player1 done.
-
    .ENDIF
 
-   .IF ax == -32
+   .IF al == -32
       call crt__getch
-      .IF ax == 72 ; white arrow up
-         cmp BYTE PTR [esi], 0
-         pushfd
-         cmp BYTE PTR [esi+1], -1
-         pushfd
-         pop eax
-         and eax, [esp]
-         add esp, 4
-         .IF eax & 64
+      .IF al == 72 ; white arrow up
+         .IF forbidDirect[0] == 0 && forbidDirect[1] == -1
             jmp START_turn
          .ENDIF
-         mov BYTE PTR [edi], 0
-         mov BYTE PTR [edi+1], -1
-      .ELSEIF ax == 80 ; white arrow down
-         cmp BYTE PTR [esi], 0
-         pushfd
-         cmp BYTE PTR [esi+1], 1
-         pushfd
-         pop eax
-         and eax, [esp]
-         add esp, 4
-         .IF eax & 64
+         mov direct[0], 0
+         mov direct[1], -1
+      .ELSEIF al == 80 ; white arrow down
+         .IF forbidDirect[0] == 0 && forbidDirect[1] == 1
             jmp START_turn
          .ENDIF
-         mov BYTE PTR [edi], 0
-         mov BYTE PTR [edi+1], 1
-      .ELSEIF ax == 75 ; white arrow left 
-         cmp BYTE PTR [esi], -1
-         pushfd
-         cmp BYTE PTR [esi+1], 0
-         pushfd
-         pop eax
-         and eax, [esp]
-         add esp, 4
-         .IF eax & 64
+         mov direct[0], 0
+         mov direct[1], 1
+      .ELSEIF al == 75 ; white arrow left 
+         .IF forbidDirect[0] == -1 && forbidDirect[1] == 0
             jmp START_turn
          .ENDIF
-         mov BYTE PTR [edi], -1
-         mov BYTE PTR [edi+1], 0
-      .ELSEIF ax == 77 ; white arrow right
-         cmp BYTE PTR [esi], 1
-         pushfd
-         cmp BYTE PTR [esi+1], 0
-         pushfd
-         pop eax
-         and eax, [esp]
-         add esp, 4
-         .IF eax & 64
+         mov direct[0], -1
+         mov direct[1], 0
+      .ELSEIF al == 77 ; white arrow right
+         .IF forbidDirect[0] == 1 && forbidDirect[1] == 0
             jmp START_turn
          .ENDIF
-         mov BYTE PTR [edi], 1
-         mov BYTE PTR [edi+1], 0     
+         mov direct[0], 1
+         mov direct[1], 0     
       .ENDIF
    .ENDIF
    jmp START_turn
@@ -370,7 +340,7 @@ L1:
 	mov leng, 4
 	set1DArray OFFSET head, 0, 21
 	set1DArray OFFSET head, 1, 9
-	set1DArray OFFSET tail, 0, 21
+	set1DArray OFFSET tail, 0, 18
 	set1DArray OFFSET tail, 1, 9
 	set1DArray OFFSET direct, 0, 1
 	set1DArray OFFSET direct, 1, 0
@@ -494,10 +464,130 @@ LOUT:
 
 revive ENDP
 
-move PROC
+;--------------------------------
+move PROC USES eax ebx ecx,
 
-    ret
+    LOCAL th[4]:BYTE
+;--------------------------------
+START_move:
+   
 
+   movzx eax, speed
+   INVOKE Sleep, eax
+   
+   mov ax, 0
+   mov al, head[0]
+   add al, direct[0]
+   add al, 40
+   mov bl, 40
+   div bl
+   mov th[0], ah
+
+   mov ax, 0
+   mov al, head[1]
+   add al, direct[1]
+   add al, 23
+   mov bl, 23
+   div bl
+   mov th[1], ah
+
+   ; initialize th[2] and th[3] here until player1 done.
+
+   getMap th[0], th[1], 0
+
+   .IF player == 2 ; && (s[th[0]][th[1]][0] >= 0 && s[th[2]][th[3]][0] >= 0 || (th[0] == th[2] && th[1] == th[3]))
+      ; do until player1 done.
+   .ELSEIF al != -1
+      .IF player == 2
+         ; do until player1 done.
+      .ELSE
+         dec life
+         .IF life == 0
+            jmp END_move
+         .ENDIF
+         shr score, 1
+         INVOKE printString, 22, 0, ADDR space13 
+         mov eax, score
+         INVOKE printInteger, 22, 0, eax
+         INVOKE printString, 32, 0, ADDR space13
+         INVOKE printInteger, 43, 0, 4
+         movzx eax, life
+         INVOKE printInteger, 61, 0, eax
+         INVOKE revive, 0
+         call waiting
+         jmp START_move
+      .ENDIF
+   .ELSEIF player == 2 ; &&s[th[2]][th[3]][0]>=0
+      ; do until player1 done.
+   .ENDIF
+
+   INVOKE printMapItem, head[0], head[1], ADDR bodyImage
+   mov dl, th[0]
+   setMap head[0], head[1], 0, dl
+   mov dl, th[1]
+   setMap head[0], head[1], 1, dl
+   mov al, th[0]
+   mov head[0], al
+   mov al, th[1]
+   mov head[1], al
+   .IF player == 2
+      ; TODO until player1 done.
+   .ENDIF
+
+   setMap head[0], head[1], 0, 100
+   INVOKE printMapItem, head[0], head[1], ADDR headP1Image
+   mov al, direct[0]
+   neg al
+   mov forbidDirect[0], al
+   mov al, direct[1]
+   neg al
+   mov forbidDirect[1], al
+   .IF player == 2
+      ; TODO until player1 done.
+   .ENDIF
+
+   .IF grow
+      dec grow
+      inc leng
+      movzx eax, leng
+      INVOKE printInteger, 43, 0, eax
+   .ELSE
+      INVOKE printMapItem, tail[0], tail[1], ADDR space2
+      mov dh, tail[0]
+      mov dl, tail[1]
+      getMap dh, dl, 0
+      mov tail[0], al
+      getMap dh, dl, 1
+      mov tail[1], al
+      setMap dh, dl, 0, -1
+   .ENDIF
+   .IF grow[1]
+      ; do until player1 done.
+   .ELSEIF player == 2
+      ; do until player1 done.
+   .ENDIF
+
+   mov ah, food[0]
+   mov al, food[1]
+   .IF head[0] == ah && head[1] == al
+      add grow, 3
+      mov eax, 0
+      mov ax, earn
+      add score, eax
+      inc earn
+      mov eax, score
+      INVOKE printInteger, 22, 0, eax
+      INVOKE foodRevive
+   .ENDIF
+
+   .IF player == 2 ; && head2[0] == food[0] && head2[1] == food[1]
+      ; do until player1 done.
+   .ENDIF
+
+   jmp START_move
+
+END_move:
+   ret
 move ENDP
 
 waiting PROC
