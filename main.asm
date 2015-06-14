@@ -28,13 +28,12 @@ direct        BYTE ?, ?
 forbidDirect  BYTE ?, ?
 grow          BYTE ?, ?
 food          BYTE ?, ?
-speed         WORD ?
-life          WORD ?
-
-earn          WORD ?
-over          WORD ?
-score         WORD ?
-leng          WORD ?
+speed         BYTE ?
+life          BYTE ?, ?
+earn          WORD ?, ?
+over          BYTE ?
+score         DWORD ?, ?
+leng          WORD ?, ?
 player        BYTE  ?
 tmp           WORD ?
 
@@ -215,6 +214,9 @@ turn PROC USES eax ebx edx esi edi
 START_turn:
 
    call crt__getch
+   .IF over == 1
+        jmp END_turn
+   .ENDIF
 
    mov edi, OFFSET direct
    mov esi, OFFSET forbidDirect
@@ -340,10 +342,10 @@ initialize PROC USES eax ebx ecx
     LOCAL _st:SYSTEMTIME
 ;initialize the snake game
 ;--------------------------------
-	mov ax, 50
-	mov speed, ax
-	mov ax, 3
-	mov life, ax
+	mov al, 50
+	mov speed, al
+	mov al, 3
+	mov life, al
 
 	mov esi, OFFSET map
 	mov ecx, gameHeight * gameWidth * 2
@@ -375,14 +377,16 @@ L1:
 	set1DArray OFFSET forbidDirect, 0, -1
 	set1DArray OFFSET forbidDirect, 1, 0
 	INVOKE printString, 15, 0, ADDR scoreMsg
-	mov ax, score
+	mov eax, score
 	INVOKE printInteger, 21, 0, eax
 	INVOKE printString, 35, 0, ADDR lengthMsg
+    mov eax, 0
 	mov ax, leng
 	INVOKE printInteger, 42, 0, eax
 	INVOKE printString, 55, 0, ADDR lifeMsg
-	mov ax, life
-	INVOKE printInteger, 61, 0, eax
+    mov eax, 0
+	mov al, life
+	INVOKE printInteger, 60, 0, eax
 	INVOKE printString, 36, 10, ADDR initSnake
 
 	.IF player == 2
@@ -493,6 +497,7 @@ revive ENDP
 move PROC
 
     ret
+
 move ENDP
 
 waiting PROC
@@ -578,14 +583,16 @@ gameover PROC USES eax
 
     mov eax, 0
     INVOKE printString, 15, 0, ADDR scoreMsg
-    mov ax, score
-    INVOKE printInteger, 22, 0, eax
+    mov eax, score
+    INVOKE printInteger, 21, 0, eax
     INVOKE printString, 35, 0, ADDR lengthMsg
+    mov eax, 0
     mov ax, leng
-    INVOKE printInteger, 43, 0, eax
+    INVOKE printInteger, 42, 0, eax
     INVOKE printString, 55, 0, ADDR lifeMsg
-    mov ax, life
-    INVOKE printInteger, 61, 0, eax
+    mov eax, 0
+    mov al, life
+    INVOKE printInteger, 60, 0, eax
 
     .IF player == 2
 
@@ -609,20 +616,10 @@ gameover PROC USES eax
 
 gameover ENDP
 
-testThread PROC
-infloop:
-	.IF over == 0
-		INVOKE foodRevive
-		INVOKE Sleep, 500
-		jmp infloop
-	.ENDIF
-
-	ret
-testThread ENDP
-
 start@0 PROC
     
     LOCAL structCursorInfo:CONSOLE_CURSOR_INFO
+    LOCAL xx:BYTE
 
     INVOKE GetStdHandle, STD_OUTPUT_HANDLE
     mov consoleHandle, eax
@@ -649,45 +646,40 @@ PENTER:
 	jmp PENTER
 
 START:
-	mov ecx, 7
 	mov edx, 17
 L1:
+    .IF dl == 23
+        jmp LOUT
+    .ENDIF
+
 	getMap dl, 15, 0
-	mov al, dl
-	mov bl, 2
-	mul bl
+    mov al, 2
+    mul dl
+    mov xx, al
 	.IF al == 0
-        mov al, 2
-        mul dl
-		INVOKE printString, al, 16, ADDR idk
+		INVOKE printString, xx, 16, ADDR idk
 	.ELSEIF al == -2
-        mov al, 2
-        mul dl
-		INVOKE printString, al, 16, ADDR foodImage
+		INVOKE printString, xx, 16, ADDR foodImage
 	.ELSE
-        mov al, 2
-        mul dl
-		INVOKE printString, al, 16, ADDR space2
+		INVOKE printString, xx, 16, ADDR space2
 	.ENDIF
 	inc dl
-	loop L1
 
-	INVOKE CreateThread, NULL, 0, ADDR testThread, 0, THREAD_PRIORITY_NORMAL, NULL
-	call crt__getch
-	mov over, 1
+	jmp L1
 
+LOUT:
+	INVOKE CreateThread, NULL, 0, ADDR turn, 0, THREAD_PRIORITY_NORMAL, NULL
 	INVOKE move
     cls
 	INVOKE gameover
 	mov over, 1
+    INVOKE keybd_event, VK_SPACE, 0, 0, 0
 	INVOKE printString, 34, 14, ADDR restartMsg
 	call crt__getch
-	.IF ax == 316Eh ; n
+	.IF al == 'n' || al == 'N'
         INVOKE ExitProcess, 0
-	.ELSEIF ax == 314Eh ; N
-		INVOKE ExitProcess, 0
-	.ENDIF
-
+    .ENDIF
+    cls
 	jmp restart
 start@0 ENDP
 END start@0
