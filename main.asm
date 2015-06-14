@@ -24,8 +24,8 @@ gameHeight = 22
 map           SBYTE gameWidth * gameHeight * 2 dup(?)
 head          BYTE ?, ?
 tail          BYTE ?, ?
-direct        BYTE ?, ?
-forbidDirect  BYTE ?, ?
+direct        SBYTE ?, ?
+forbidDirect  SBYTE ?, ?
 grow          BYTE ?, ?
 food          BYTE ?, ?
 speed         BYTE ?
@@ -71,31 +71,6 @@ r1            BYTE "rddddddd", 0
 r2            BYTE "rurrrdr", 0
 
 .code
-;-----------------------------------------
-;Note: 1DArrays in this program are in type of BYTE!
-set1DArray MACRO arr:REQ, x:REQ, value:REQ
-;arr: OFFSET of the array
-;x: index
-;value: in BYTE type!
-;-----------------------------------------
-	push esi
-	push eax
-	push ebx
-
-	mov eax, 0
-	mov ebx, TYPE BYTE
-	mov al, x
-	mul bl
-	mov esi, arr
-	add esi, eax
-
-	mov BYTE PTR [esi], value
-
-	pop ebx
-	pop eax
-	pop esi
-ENDM
-
 ;------------------------------------------
 setMap MACRO x:REQ, y:REQ, z:REQ, value:REQ
 ;x, y, z: index
@@ -117,7 +92,7 @@ setMap MACRO x:REQ, y:REQ, z:REQ, value:REQ
 
 	mov esi, OFFSET map
 	add esi, eax
-	mov BYTE PTR [esi], value
+	mov SBYTE PTR [esi], value
 
 	pop esi
 	pop ebx
@@ -277,7 +252,7 @@ L1:
 	loop L1
 
 	.IF flag == 0
-		set1DArray OFFSET food, 0, 100
+		mov food, 100
 		jmp LEND
 	.ENDIF
 
@@ -286,12 +261,12 @@ CHECK_POS:
     INVOKE crt_rand
     mov ebx, gameWidth
     div ebx
-	set1DArray OFFSET food, 0, dl
+    mov food, dl
     mov edx, 0
     INVOKE crt_rand
     mov ebx, gameHeight
     div ebx
-	set1DArray OFFSET food, 1, dl
+    mov food + TYPE food, dl
 	getMap food, food + TYPE food, 0
 
 	.IF al == -1
@@ -310,6 +285,8 @@ foodRevive ENDP
 initialize PROC USES eax ebx ecx
 
     LOCAL _st:SYSTEMTIME
+    LOCAL i:BYTE
+    LOCAL j:BYTE
 ;initialize the snake game
 ;--------------------------------
 	mov al, 50
@@ -317,14 +294,25 @@ initialize PROC USES eax ebx ecx
 	mov al, 3
 	mov life, al
 
-	mov esi, OFFSET map
-	mov ecx, gameHeight * gameWidth * 2
-
 	; initilize map array
+    mov i, 0
+   
 L1:
-	mov BYTE PTR [esi], -1
-	inc esi
-	loop L1
+    .IF i == 40
+        jmp LOUT
+    .ENDIF
+    mov j, 0
+L2:
+    .IF j == 23
+        jmp L1END
+    .ENDIF
+    setMap i, j, 0, -1
+    inc j
+    loop L2
+L1END:
+    inc i
+    loop L1
+LOUT:
 	
 	setMap 18, 9, 0, 19
 	setMap 18, 9, 1, 9
@@ -338,14 +326,14 @@ L1:
 	mov score, 0
 	mov grow, 0
 	mov leng, 4
-	set1DArray OFFSET head, 0, 21
-	set1DArray OFFSET head, 1, 9
-	set1DArray OFFSET tail, 0, 18
-	set1DArray OFFSET tail, 1, 9
-	set1DArray OFFSET direct, 0, 1
-	set1DArray OFFSET direct, 1, 0
-	set1DArray OFFSET forbidDirect, 0, -1
-	set1DArray OFFSET forbidDirect, 1, 0
+    mov head, 21
+    mov head + TYPE head, 9
+    mov tail, 18
+    mov tail + TYPE tail, 9
+    mov direct, 1
+    mov direct + TYPE direct, 0
+    mov forbidDirect, -1
+    mov forbidDirect + TYPE forbidDirect, 0
 	INVOKE printString, 15, 0, ADDR scoreMsg
 	mov eax, score
 	INVOKE printInteger, 21, 0, eax
@@ -365,6 +353,27 @@ L1:
 		; until the basic snake done, lets do the 2 players
 
 	.ENDIF
+
+    mov i, 0
+L3:
+    .IF i == 40
+        jmp LOUT2
+    .ENDIF
+    mov j, 0
+L4:
+    .IF j == 23
+        jmp L3END
+    .ENDIF
+    getMap i, j, 0
+    .IF al == 0
+        INVOKE printMapItem, i, j, ADDR idk
+    .ENDIF
+    inc j
+    loop L4
+L3END:
+    inc i
+    loop L3
+LOUT2:
 
     INVOKE GetSystemTime, ADDR _st
     movzx  eax, SYSTEMTIME.wMilliseconds[_st]
@@ -462,6 +471,8 @@ LOUT:
         INVOKE foodRevive
     .ENDIF
 
+    ret
+
 revive ENDP
 
 ;--------------------------------
@@ -506,13 +517,15 @@ START_move:
             jmp END_move
          .ENDIF
          shr score, 1
-         INVOKE printString, 22, 0, ADDR space13 
+         INVOKE printString, 15, 0, ADDR scoreMsg
          mov eax, score
-         INVOKE printInteger, 22, 0, eax
-         INVOKE printString, 32, 0, ADDR space13
-         INVOKE printInteger, 43, 0, 4
+         INVOKE printInteger, 21, 0, eax
+         INVOKE printString, 35, 0, ADDR lengthMsg
+         movzx eax, leng
+         INVOKE printInteger, 42, 0, eax
+         INVOKE printString, 55, 0, ADDR lifeMsg
          movzx eax, life
-         INVOKE printInteger, 61, 0, eax
+         INVOKE printInteger, 60, 0, eax
          INVOKE revive, 0
          call waiting
          jmp START_move
@@ -604,6 +617,8 @@ waiting PROC
     INVOKE printString, 4, 0, ADDR space2
     INVOKE printString, 6, 0, ADDR space2
 
+    ret
+
 waiting ENDP
 
 paint PROC USES eax ebx ecx edx esi,
@@ -671,17 +686,14 @@ gameover PROC USES eax
 
     ; TODO score = life * 100 did not implement yet
 
-    mov eax, 0
     INVOKE printString, 15, 0, ADDR scoreMsg
     mov eax, score
     INVOKE printInteger, 21, 0, eax
     INVOKE printString, 35, 0, ADDR lengthMsg
-    mov eax, 0
-    mov ax, leng
+    movzx eax, leng
     INVOKE printInteger, 42, 0, eax
     INVOKE printString, 55, 0, ADDR lifeMsg
-    mov eax, 0
-    mov al, life
+    movzx eax, life
     INVOKE printInteger, 60, 0, eax
 
     .IF player == 2
