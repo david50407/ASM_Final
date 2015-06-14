@@ -1,3 +1,5 @@
+﻿extern "C"
+{
 #include<io.h>
 #include<time.h>
 #include<conio.h>
@@ -52,7 +54,7 @@ void turn()
 	char input;
 	while(1)
 	{
-		input=getch();
+		input=_getch();
 		if(over)
 			return;
 		if(player==2)
@@ -87,7 +89,7 @@ void turn()
 		}
 		if(input==-32)
 		{
-			input=getch();
+			input=_getch();
 			switch(input)
 			{
 				case 72:
@@ -550,7 +552,7 @@ int main()
 restart:
 	initialize();
 	strout(35,16,"Press Enter");
-	while(getch()!=13);
+	while(_getch()!=13);
 	for(int i=17;i!=23;i++)
 	{
 		if(s[i][15][0]==0)
@@ -567,9 +569,10 @@ restart:
 	over=1;
 	keybd_event(VK_SPACE, 0, 0, 0);
 	strout(34,14,"Play Again(Y/n)");
-	again=getch();
+	again=_getch();
 	if(again=='n'||again=='N')
 		return 0;
 	system("cls");
 	goto restart;
+}
 }
