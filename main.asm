@@ -206,7 +206,7 @@ END_turn:
 turn ENDP
 
 ;--------------------------------
-foodRevive PROC USES eax ebx ecx,
+foodRevive PROC USES eax ebx ecx edx,
 
 	LOCAL flag:BYTE
 ;as title
@@ -231,10 +231,12 @@ L1:
 CHECK_POS:
     INVOKE crt_rand
     mov ebx, gameWidth
+	xor edx, edx
     div ebx
 	set1DArray OFFSET food, 0, dl
     INVOKE crt_rand
     mov ebx, gameHeight
+	xor edx, edx
     div ebx
 	set1DArray OFFSET food, 1, dl
 	getMap food, food + TYPE food, 0
