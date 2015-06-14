@@ -275,11 +275,13 @@ CHECK_POS:
     mov edx, 0
     INVOKE crt_rand
     mov ebx, gameWidth
+	xor edx, edx
     div ebx
     mov food, dl
     mov edx, 0
     INVOKE crt_rand
     mov ebx, gameHeight
+	xor edx, edx
     div ebx
     mov food + TYPE food, dl
 	getMap food, food + TYPE food, 0
