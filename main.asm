@@ -1,11 +1,18 @@
-INCLUDE Irvine32.inc
+include \masm32\include\masm32rt.inc
+include \masm32\include\windows.inc 
+include \masm32\include\user32.inc 
+include \masm32\include\kernel32.inc 
+includelib \masm32\lib\user32.lib 
+includelib \masm32\lib\kernel32.lib
+includelib \masm32\lib\msvcrt.lib
+
 printInteger PROTO, x:WORD, y:WORD, value:DWORD
 printString	 PROTO, x:WORD, y:WORD, string:DWORD
 turn         PROTO
 foodRevive   PROTO
 revive       PROTO, mode:BYTE
 ; can not use wait as func name
-waiting      PROTO	
+waiting      PROTO
 move         PROTO
 paint        PROTO, x:BYTE, y:BYTE, route:DWORD
 gameover     PROTO
@@ -27,9 +34,8 @@ life          WORD ?
 earn          WORD ?
 over          WORD ?
 score         WORD ?
-len           WORD ?
+leng          WORD ?
 player        BYTE  ?
-consoleHandle DWORD ?
 tmp           WORD ?
 
 foodImage     BYTE "¡°", 0
@@ -43,7 +49,9 @@ pressEnter    BYTE "Press Enter", 0
 idk           BYTE "¢i", 0
 space         BYTE " ", 0
 
-testMsg BYTE "Test msg", 0
+consoleHandle DWORD ?
+threadID      DWORD ?
+
 .code
 ;-----------------------------------------
 ;Note: 1DArrays in this program are in type of BYTE!
@@ -127,6 +135,10 @@ getMap MACRO x:REQ, y:REQ, z:REQ
 	pop ebx
 ENDM
 
+.data
+formatInteger   BYTE "%d", 0
+
+.code
 ;--------------------------------
 printInteger PROC USES eax,
 	x:WORD, y:WORD, value:DWORD
@@ -140,14 +152,13 @@ printInteger PROC USES eax,
 	mov pos.x, ax
 	mov ax, y
 	mov pos.y, ax
-	INVOKE SetConsoleCursorPosition, consoleHandle, pos
-	mov eax, value
-	call WriteDec
+	INVOKE SetConsoleCursorPosition, consoleHandle, ADDR pos
+    INVOKE crt_printf, ADDR formatInteger, value
 	ret
 printInteger ENDP
 
 ;--------------------------------
-printString PROC USES edx,
+printString PROC USES ecx edx,
 	x:WORD, y:WORD, string:DWORD
 	LOCAL pos:COORD
 ; x, y: position
@@ -159,9 +170,8 @@ printString PROC USES edx,
 	mov pos.x, dx
 	mov dx, y
 	mov pos.y, dx
-	INVOKE SetConsoleCursorPosition, consoleHandle, pos
-	mov edx, string
-	call WriteString
+	INVOKE SetConsoleCursorPosition, consoleHandle, ADDR pos
+    INVOKE crt_printf, string
 	ret
 printString ENDP
 
@@ -170,7 +180,7 @@ turn PROC USES eax ebx edx
 ;turn the snake's direction
 ;--------------------------------
 START_turn:
-	call ReadChar
+	call crt__getch
 
 	.IF player == 2
 		
@@ -217,15 +227,15 @@ L1:
 		set1DArray OFFSET food, 0, 100
 		jmp LEND
 	.ENDIF
-	
+
 CHECK_POS:
-	mov eax, gameWidth
-	call RandomRange
-	mov edx, eax
+    INVOKE crt_rand
+    mov ebx, gameWidth
+    div ebx
 	set1DArray OFFSET food, 0, dl
-	mov eax, gameHeight
-	call RandomRange
-	mov edx, eax
+    INVOKE crt_rand
+    mov ebx, gameHeight
+    div ebx
 	set1DArray OFFSET food, 1, dl
 	getMap food, food + TYPE food, 0
 
@@ -243,6 +253,8 @@ foodRevive ENDP
 
 ;--------------------------------
 initialize PROC USES eax ebx ecx
+
+    LOCAL _st:SYSTEMTIME
 ;initialize the snake game
 ;--------------------------------
 	mov ax, 50
@@ -270,7 +282,7 @@ L1:
 	mov over, 0
 	mov score, 0
 	mov grow, 0
-	mov len, 4
+	mov leng, 4
 	set1DArray OFFSET head, 0, 21
 	set1DArray OFFSET head, 1, 9
 	set1DArray OFFSET tail, 0, 21
@@ -283,7 +295,7 @@ L1:
 	mov ax, score
 	INVOKE printInteger, 21, 0, eax
 	INVOKE printString, 35, 0, ADDR lengthMsg
-	mov ax, len
+	mov ax, leng
 	INVOKE printInteger, 42, 0, eax
 	INVOKE printString, 55, 0, ADDR lifeMsg
 	mov ax, life
@@ -297,7 +309,10 @@ L1:
 
 	.ENDIF
 
-	call Randomize
+    INVOKE GetSystemTime, ADDR _st
+    movzx  eax, SYSTEMTIME.wMilliseconds[_st]
+    INVOKE crt_srand, eax
+
 	INVOKE foodRevive
 
 	ret
@@ -312,9 +327,15 @@ gameover PROC
 gameover ENDP
 
 start@0 PROC
+    
+    LOCAL structCursorInfo:CONSOLE_CURSOR_INFO
 
-	INVOKE GetStdHandle, STD_OUTPUT_HANDLE
-	mov consoleHandle, eax
+    INVOKE GetStdHandle, STD_OUTPUT_HANDLE
+    mov consoleHandle, eax
+
+    INVOKE GetConsoleCursorInfo, consoleHandle, ADDR structCursorInfo
+    mov structCursorInfo.bVisible, FALSE
+    INVOKE SetConsoleCursorInfo, consoleHandle, ADDR structCursorInfo
 
 	; Test function code	
 	; INVOKE printInteger, 5, 5, 5
@@ -325,13 +346,13 @@ restart:
 	INVOKE initialize
 	INVOKE printString, 35, 16, ADDR pressEnter
 PENTER:
-	call ReadChar
-	.IF ax == 1C0Dh
+	call crt__getch
+	.IF ax == 13
 		jmp START
 	.ENDIF
 	jmp PENTER
-START:
 
+START:
 	mov ecx, 7
 	mov edx, 17
 L1:
@@ -350,17 +371,18 @@ L1:
 	loop L1
 
 	; create Thread here
+	; INVOKE CreateThread, NULL, 0, ADDR turn, 0, THREAD_PRIORITY_NORMAL, NULL
 
 	INVOKE move
-	call  Clrscr
+    cls
 	INVOKE gameover
 	mov over, 1
 	INVOKE printString, 34, 14, ADDR restartMsg
-	call ReadChar
+	call crt__getch
 	.IF ax == 316Eh ; n
-		exit
+        INVOKE ExitProcess, 0
 	.ELSEIF ax == 314Eh ; N
-		exit 
+		INVOKE ExitProcess, 0
 	.ENDIF
 
 	jmp restart
