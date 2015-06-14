@@ -51,9 +51,23 @@ space         BYTE " ", 0
 space2        BYTE "  ", 0
 headP1Image   BYTE "¡·", 0
 headP2Image   BYTE "¡ó", 0
+bodyImage     BYTE "¡´", 0
+waitMsg       BYTE "Wait:", 0
 
 consoleHandle DWORD ?
 threadID      DWORD ?
+
+g             BYTE "lullldldlddldddddrdrrrrururuulll", 0
+a             BYTE "luuuuuulluldldldldddrdrrruru", 0
+m1            BYTE "drdddddd", 0
+m2            BYTE "urdrdddddd", 0
+m3            BYTE "rurdrddlddddrru", 0
+e1            BYTE "rrrruuulluldlldlddddrdrrrrrur", 0
+o             BYTE "ruruuruuuuluululllldldlddlddddrdrdrdrr", 0
+v             BYTE "ddrddddrdrruuruuruuru", 0
+e2            BYTE "rdrrruruululllldldlddddrdrrrrurr", 0
+r1            BYTE "rddddddd", 0
+r2            BYTE "rurrrdr", 0
 
 .code
 ;-----------------------------------------
@@ -373,7 +387,7 @@ L1:
 
 	.IF player == 2
 
-		; todo:
+		; Todo:
 		; until the basic snake done, lets do the 2 players
 
 	.ENDIF
@@ -478,9 +492,120 @@ revive ENDP
 
 move PROC
 
+    ret
 move ENDP
 
-gameover PROC
+waiting PROC
+    
+    INVOKE printString, 0, 0, ADDR waitMsg
+    INVOKE printInteger, 6, 0, 3
+    INVOKE Sleep, 1000
+    INVOKE printInteger, 6, 0, 2
+    INVOKE Sleep, 1000
+    INVOKE printInteger, 6, 0, 1
+    INVOKE Sleep, 1000
+    INVOKE printString, 0, 0, ADDR space2
+    INVOKE printString, 2, 0, ADDR space2
+    INVOKE printString, 4, 0, ADDR space2
+    INVOKE printString, 6, 0, ADDR space2
+
+waiting ENDP
+
+paint PROC USES eax ebx ecx edx esi,
+    x:BYTE, y:BYTE, route:DWORD
+    LOCAL xx:BYTE
+    
+    mov al, x
+    mov head, al
+    mov al, y
+    mov head + TYPE head, al
+
+    mov al, 2
+    mov dl, head
+    mul dl
+    mov xx, al
+    INVOKE printString, xx, head + TYPE head, ADDR headP1Image
+
+    mov esi, route
+LWHILE:
+        mov al, [esi]
+        .IF al == 0
+            jmp LOUT
+        .ENDIF
+        
+        INVOKE Sleep, 20
+        mov al, 2
+        mov dl, head
+        mul dl
+        mov xx, al
+        INVOKE printString, xx, head + TYPE head, ADDR bodyImage
+
+        mov al, [esi]
+        .IF al == 'u'
+            dec head+TYPE head
+        .ELSEIF al == 'd'
+            inc head+TYPE head
+        .ELSEIF al == 'l'
+            dec head
+        .ELSEIF al == 'r'
+            inc head
+        .ENDIF
+
+        mov al, 2
+        mov dl, head
+        mul dl
+        mov xx, al
+        INVOKE printString, xx, head + TYPE head, ADDR headP1Image
+
+        inc esi
+
+        jmp LWHILE
+
+LOUT:
+    INVOKE Sleep, 20
+    mov al, 2
+    mov dl, head
+    mul dl
+    mov xx, al
+    INVOKE printString, xx, head + TYPE head, ADDR bodyImage
+
+    ret
+paint ENDP
+
+gameover PROC USES eax
+
+    ; TODO score = life * 100 did not implement yet
+
+    mov eax, 0
+    INVOKE printString, 15, 0, ADDR scoreMsg
+    mov ax, score
+    INVOKE printInteger, 22, 0, eax
+    INVOKE printString, 35, 0, ADDR lengthMsg
+    mov ax, leng
+    INVOKE printInteger, 43, 0, eax
+    INVOKE printString, 55, 0, ADDR lifeMsg
+    mov ax, life
+    INVOKE printInteger, 61, 0, eax
+
+    .IF player == 2
+
+        ; TODO
+
+    .ENDIF
+
+    INVOKE paint, 9, 2, ADDR g
+    INVOKE paint, 18, 11, ADDR a
+    INVOKE paint, 19, 4, ADDR m1
+    INVOKE paint, 21, 5, ADDR m2
+    INVOKE paint, 24, 5, ADDR m3
+    INVOKE paint, 31, 8, ADDR e1
+    INVOKE paint, 9, 22, ADDR o
+    INVOKE paint, 14, 16, ADDR v
+    INVOKE paint, 25, 19, ADDR e2
+    INVOKE paint, 32, 16, ADDR r1
+    INVOKE paint, 34, 17, ADDR r2
+
+    ret
 
 gameover ENDP
 
@@ -532,17 +657,21 @@ L1:
 	mov bl, 2
 	mul bl
 	.IF al == 0
-		INVOKE printString, dl, 16, ADDR idk
+        mov al, 2
+        mul dl
+		INVOKE printString, al, 16, ADDR idk
 	.ELSEIF al == -2
-		INVOKE printString, dl, 16, ADDR foodImage
+        mov al, 2
+        mul dl
+		INVOKE printString, al, 16, ADDR foodImage
 	.ELSE
-		INVOKE printString, dl, 16, ADDR space
+        mov al, 2
+        mul dl
+		INVOKE printString, al, 16, ADDR space2
 	.ENDIF
 	inc dl
 	loop L1
 
-	; create Thread here
-	; INVOKE CreateThread, NULL, 0, ADDR turn, 0, THREAD_PRIORITY_NORMAL, NULL
 	INVOKE CreateThread, NULL, 0, ADDR testThread, 0, THREAD_PRIORITY_NORMAL, NULL
 	call crt__getch
 	mov over, 1
