@@ -186,6 +186,22 @@ printString PROC USES ecx edx,
 printString ENDP
 
 ;--------------------------------
+printMapItem PROC USES eax ebx,
+	x:WORD, y:WORD, string:DWORD
+; x, y: position
+; string: The OFFSET of the string
+;
+; display a string on the (x, y)
+;--------------------------------
+	mov ax, x
+	imul ax, 2
+	mov bx, y
+	add bx, 1
+	INVOKE printString, ax, bx, string
+	ret
+printMapItem ENDP
+
+;--------------------------------
 turn PROC USES eax ebx edx
 ;turn the snake's direction
 ;--------------------------------
@@ -258,7 +274,7 @@ CHECK_POS:
 
 SET_FOOD:
 	setMap food, food + TYPE food, 0, -2
-	INVOKE printString, food, food + TYPE food, ADDR foodImage
+	INVOKE printMapItem, food, food + TYPE food, ADDR foodImage
 LEND:
 	ret
 foodRevive ENDP
