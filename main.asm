@@ -484,6 +484,17 @@ gameover PROC
 
 gameover ENDP
 
+testThread PROC
+infloop:
+	.IF over == 0
+		INVOKE foodRevive
+		INVOKE Sleep, 500
+		jmp infloop
+	.ENDIF
+
+	ret
+testThread ENDP
+
 start@0 PROC
     
     LOCAL structCursorInfo:CONSOLE_CURSOR_INFO
@@ -532,6 +543,9 @@ L1:
 
 	; create Thread here
 	; INVOKE CreateThread, NULL, 0, ADDR turn, 0, THREAD_PRIORITY_NORMAL, NULL
+	INVOKE CreateThread, NULL, 0, ADDR testThread, 0, THREAD_PRIORITY_NORMAL, NULL
+	call crt__getch
+	mov over, 1
 
 	INVOKE move
     cls
