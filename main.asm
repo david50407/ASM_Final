@@ -6,10 +6,6 @@ includelib \masm32\lib\user32.lib
 includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\msvcrt.lib
 
-.MODEL small,c
-
-showLastError    PROTO
-
 printInteger PROTO, x:WORD, y:WORD, value:DWORD
 printString	 PROTO, x:WORD, y:WORD, string:DWORD
 turn         PROTO
@@ -29,7 +25,7 @@ map           BYTE gameWidth * gameHeight * 2 dup(?)
 head          BYTE ?, ?
 tail          BYTE ?, ?
 direct        BYTE ?, ?
-forbiddirect  BYTE ?, ?
+forbidDirect  BYTE ?, ?
 grow          BYTE ?, ?
 food          BYTE ?, ?
 speed         WORD ?
@@ -52,6 +48,9 @@ lifeMsg       BYTE "Life:", 0
 pressEnter    BYTE "Press Enter", 0
 idk           BYTE "¢i", 0
 space         BYTE " ", 0
+space2        BYTE "  ", 0
+headP1Image   BYTE "¡·", 0
+headP2Image   BYTE "¡ó", 0
 
 consoleHandle DWORD ?
 threadID      DWORD ?
@@ -157,9 +156,6 @@ printInteger PROC USES eax,
 	mov ax, y
 	mov pos.y, ax
 	INVOKE SetConsoleCursorPosition, consoleHandle, DWORD PTR [pos]
-	.IF ax == 0
-		INVOKE showLastError
-	.ENDIF
     INVOKE crt_printf, ADDR formatInteger, value
 	ret
 printInteger ENDP
@@ -178,9 +174,6 @@ printString PROC USES ecx edx,
 	mov dx, y
 	mov pos.y, dx
 	INVOKE SetConsoleCursorPosition, consoleHandle, DWORD PTR [pos]
-	.IF ax == 0
-		INVOKE showLastError
-	.ENDIF
     INVOKE crt_printf, string
 	ret
 printString ENDP
@@ -202,33 +195,81 @@ printMapItem PROC USES eax ebx,
 printMapItem ENDP
 
 ;--------------------------------
-turn PROC USES eax ebx edx
+turn PROC USES eax ebx edx esi edi
 ;turn the snake's direction
 ;--------------------------------
 START_turn:
-	call crt__getch
 
-	.IF player == 2
-		
-		; do until player1 done.
+   call crt__getch
 
-	.ENDIF
+   mov edi, OFFSET direct
+   mov esi, OFFSET forbidDirect
 
-	.IF ax == 4800h ; white arrow up
+   .IF player == 2
+      
+      ; do until player1 done.
 
-	.ENDIF
-	.IF ax == 5000h ; white arrow down
-		
-	.ENDIF
-	.IF ax == 4B00h ; white arrow left
-		
-	.ENDIF
-	.IF ax == 4D00h ; white arrow right
-		
-	.ENDIF
-	jmp START_turn
+   .ENDIF
+
+   .IF ax == -32
+      call crt__getch
+      .IF ax == 72 ; white arrow up
+         cmp BYTE PTR [esi], 0
+         pushfd
+         cmp BYTE PTR [esi+1], -1
+         pushfd
+         pop eax
+         and eax, [esp]
+         add esp, 4
+         .IF eax & 64
+            jmp START_turn
+         .ENDIF
+         mov BYTE PTR [edi], 0
+         mov BYTE PTR [edi+1], -1
+      .ELSEIF ax == 80 ; white arrow down
+         cmp BYTE PTR [esi], 0
+         pushfd
+         cmp BYTE PTR [esi+1], 1
+         pushfd
+         pop eax
+         and eax, [esp]
+         add esp, 4
+         .IF eax & 64
+            jmp START_turn
+         .ENDIF
+         mov BYTE PTR [edi], 0
+         mov BYTE PTR [edi+1], 1
+      .ELSEIF ax == 75 ; white arrow left 
+         cmp BYTE PTR [esi], -1
+         pushfd
+         cmp BYTE PTR [esi+1], 0
+         pushfd
+         pop eax
+         and eax, [esp]
+         add esp, 4
+         .IF eax & 64
+            jmp START_turn
+         .ENDIF
+         mov BYTE PTR [edi], -1
+         mov BYTE PTR [edi+1], 0
+      .ELSEIF ax == 77 ; white arrow right
+         cmp BYTE PTR [esi], 1
+         pushfd
+         cmp BYTE PTR [esi+1], 0
+         pushfd
+         pop eax
+         and eax, [esp]
+         add esp, 4
+         .IF eax & 64
+            jmp START_turn
+         .ENDIF
+         mov BYTE PTR [edi], 1
+         mov BYTE PTR [edi+1], 0     
+      .ENDIF
+   .ENDIF
+   jmp START_turn
 END_turn:
-	ret
+   ret
 turn ENDP
 
 ;--------------------------------
@@ -255,14 +296,14 @@ L1:
 	.ENDIF
 
 CHECK_POS:
+    mov edx, 0
     INVOKE crt_rand
     mov ebx, gameWidth
-	xor edx, edx
     div ebx
 	set1DArray OFFSET food, 0, dl
+    mov edx, 0
     INVOKE crt_rand
     mov ebx, gameHeight
-	xor edx, edx
     div ebx
 	set1DArray OFFSET food, 1, dl
 	getMap food, food + TYPE food, 0
@@ -317,8 +358,8 @@ L1:
 	set1DArray OFFSET tail, 1, 9
 	set1DArray OFFSET direct, 0, 1
 	set1DArray OFFSET direct, 1, 0
-	set1DArray OFFSET forbiddirect, 0, -1
-	set1DArray OFFSET forbiddirect, 1, 0
+	set1DArray OFFSET forbidDirect, 0, -1
+	set1DArray OFFSET forbidDirect, 1, 0
 	INVOKE printString, 15, 0, ADDR scoreMsg
 	mov ax, score
 	INVOKE printInteger, 21, 0, eax
@@ -346,6 +387,95 @@ L1:
 	ret
 initialize ENDP
 
+revive PROC USES eax ebx ecx edx,
+    mode:BYTE
+    LOCAL tmp1[2]:BYTE
+    LOCAL tmp2[2]:BYTE
+    
+    .IF mode == 0
+        mov leng, 4
+        mov al, tail
+        mov tmp1, al
+        mov al, tail + TYPE tail
+        mov tmp1 + TYPE tail, al
+
+        mov ecx, 3
+L1:
+        mov al, tmp1
+        mov tmp2, al
+        mov al, tmp1 + TYPE tmp1
+        mov tmp2 + TYPE tmp2, al
+        getMap tmp2, tmp2 + TYPE tmp2, 0
+        mov tmp1, al
+        getMap tmp2, tmp2 + TYPE tmp2, 1
+        mov tmp1 + TYPE tmp1, al
+        loop L1
+
+        mov al, tmp1
+        mov head, al
+        mov al, tmp1 + TYPE tmp1
+        mov head + TYPE head, al
+        mov al, tmp1
+        sub al, tmp2
+        mov direct, al
+        mov al, tmp1 + TYPE tmp1
+        sub al, tmp2 + TYPE tmp2
+        mov direct + TYPE direct, al
+        mov al, direct
+        neg al
+        mov forbidDirect, al
+        mov al, direct + TYPE direct
+        neg al
+        mov forbidDirect + TYPE forbidDirect, al
+        
+        getMap tmp1, tmp1 + TYPE tmp1, 0
+        .IF al != 100
+            mov al, tmp1
+            mov tmp2, al
+            mov al, tmp1 + TYPE tmp1
+            mov tmp2 + TYPE tmp2, al
+            getMap tmp2, tmp2 + TYPE tmp2, 0
+            mov tmp1, al
+            getMap tmp2, tmp2 + TYPE tmp2, 1
+            mov tmp1 + TYPE tmp1, al
+
+            getMap tmp1, tmp1 + TYPE tmp, 0
+LWHITE:     
+            .IF al == 100
+                jmp LOUT
+            .ENDIF
+
+            mov al, tmp1
+            mov tmp2, al
+            mov al, tmp1 + TYPE tmp1
+            mov tmp2 + TYPE tmp2, al
+            getMap tmp2, tmp2 + TYPE tmp2, 0
+            mov tmp1, al
+            getMap tmp2, tmp2 + TYPE tmp2, 1
+            mov tmp1 + TYPE tmp1, al
+            setMap tmp2, tmp2 + TYPE tmp2, 0, -1
+            INVOKE printMapItem, tmp2, tmp2 + TYPE tmp2, ADDR space2
+            jmp LWHITE
+
+LOUT:       
+            setMap tmp1, tmp1 + TYPE tmp1, 0, -1
+            INVOKE printMapItem, tmp1, tmp1 + TYPE tmp1, ADDR space2
+        .ENDIF
+        setMap head, head + TYPE head, 0, 100
+        INVOKE printMapItem, head, head + TYPE head, ADDR headP1Image
+
+    .ELSE
+
+        ; 2P snake
+
+    .ENDIF
+
+    .IF food == 100
+        INVOKE foodRevive
+    .ENDIF
+
+revive ENDP
+
 move PROC
 
 move ENDP
@@ -364,6 +494,8 @@ start@0 PROC
     INVOKE GetConsoleCursorInfo, consoleHandle, ADDR structCursorInfo
     mov structCursorInfo.bVisible, FALSE
     INVOKE SetConsoleCursorInfo, consoleHandle, ADDR structCursorInfo
+
+    ; INVOKE GetLastError
 
 	; Test function code	
 	; INVOKE printInteger, 5, 5, 5
@@ -389,11 +521,11 @@ L1:
 	mov bl, 2
 	mul bl
 	.IF al == 0
-		INVOKE printString, al, 16, ADDR idk
+		INVOKE printString, dl, 16, ADDR idk
 	.ELSEIF al == -2
-		INVOKE printString, al, 16, ADDR foodImage
+		INVOKE printString, dl, 16, ADDR foodImage
 	.ELSE
-		INVOKE printString, al, 16, ADDR space
+		INVOKE printString, dl, 16, ADDR space
 	.ENDIF
 	inc dl
 	loop L1
