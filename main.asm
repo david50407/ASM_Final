@@ -35,7 +35,6 @@ over          BYTE ?
 score         DWORD ?, ?
 leng          WORD ?, ?
 player        BYTE  ?
-tmp           WORD ?
 
 foodImage     BYTE "¡°", 0
 initSnake     BYTE "¡´¡´¡´¡·", 0
@@ -239,20 +238,34 @@ turn ENDP
 foodRevive PROC USES eax ebx ecx edx,
 
 	LOCAL flag:BYTE
+    LOCAL i:BYTE
+    LOCAL j:BYTE
 ;as title
 ;-------------------------------
 	mov flag, 0
-	mov esi, OFFSET map
-	mov eax, 0
-	mov ecx, gameHeight * gameWidth
-L1:
-	mov al, BYTE PTR [esi]
-	.IF al == -1
-		mov flag, 1
-	.ENDIF
-	inc esi
-	loop L1
 
+    mov i, 0
+L1:
+    .IF i == 40
+        jmp LOUT
+    .ENDIF
+    mov j, 0
+L2:
+    .IF j == 23
+        jmp L1END
+    .ENDIF
+    getMap i, j, 0
+    .IF al == -1
+        mov flag, 1
+        jmp LOUT
+    .ENDIF
+    inc j
+    loop L2
+L1END:
+    inc i
+    loop L1
+
+LOUT:
 	.IF flag == 0
 		mov food, 100
 		jmp LEND
@@ -438,8 +451,8 @@ L1:
             getMap tmp2, tmp2 + TYPE tmp2, 1
             mov tmp1 + TYPE tmp1, al
 
-            getMap tmp1, tmp1 + TYPE tmp, 0
 LWHITE:     
+            getMap tmp1, tmp1 + TYPE tmp1, 0
             .IF al == 100
                 jmp LOUT
             .ENDIF
@@ -510,7 +523,7 @@ START_move:
 
    .IF player == 2 ; && (s[th[0]][th[1]][0] >= 0 && s[th[2]][th[3]][0] >= 0 || (th[0] == th[2] && th[1] == th[3]))
       ; do until player1 done.
-   .ELSEIF al != -1
+   .ELSEIF al != -1 && al != -2
       .IF player == 2
          ; do until player1 done.
       .ELSE
@@ -519,13 +532,11 @@ START_move:
             jmp END_move
          .ENDIF
          shr score, 1
-         INVOKE printString, 15, 0, ADDR scoreMsg
+         INVOKE printString, 21, 0, ADDR space13
          mov eax, score
          INVOKE printInteger, 21, 0, eax
-         INVOKE printString, 35, 0, ADDR lengthMsg
-         movzx eax, leng
-         INVOKE printInteger, 42, 0, eax
-         INVOKE printString, 55, 0, ADDR lifeMsg
+         INVOKE printString, 42, 0, ADDR space13
+         INVOKE printInteger, 42, 0, 4
          movzx eax, life
          INVOKE printInteger, 60, 0, eax
          INVOKE revive, 0
@@ -565,7 +576,7 @@ START_move:
       dec grow
       inc leng
       movzx eax, leng
-      INVOKE printInteger, 43, 0, eax
+      INVOKE printInteger, 42, 0, eax
    .ELSE
       INVOKE printMapItem, tail[0], tail[1], ADDR space2
       mov dh, tail[0]
@@ -591,7 +602,7 @@ START_move:
       add score, eax
       inc earn
       mov eax, score
-      INVOKE printInteger, 22, 0, eax
+      INVOKE printInteger, 21, 0, eax
       INVOKE foodRevive
    .ENDIF
 
@@ -756,10 +767,10 @@ L1:
         jmp LOUT
     .ENDIF
 
-	getMap dl, 15, 0
     mov al, 2
-    mul dl
+    mul dl 
     mov xx, al
+	getMap dl, 15, 0
 	.IF al == 0
 		INVOKE printString, xx, 16, ADDR idk
 	.ELSEIF al == -2
@@ -785,5 +796,6 @@ LOUT:
     .ENDIF
     cls
 	jmp restart
+
 start@0 ENDP
 END start@0
