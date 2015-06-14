@@ -20,7 +20,7 @@ initialize   PROTO
 
 .data
 gameWidth = 40
-gameHeight = 22
+gameHeight = 23
 map           SBYTE gameWidth * gameHeight * 2 dup(?)
 head          BYTE ?, ?
 tail          BYTE ?, ?
@@ -82,13 +82,14 @@ setMap MACRO x:REQ, y:REQ, z:REQ, value:REQ
 	mov eax, 0
 	mov ebx, 0
 
-	mov al, gameWidth
+	mov al, gameHeight
 	mov bl, x
 	mul bl
 	add al, y
-	mov bl, z
-	inc bl
-	mul bl
+    mov bl, z
+    .IF bl == 1
+        add ax, gameWidth * gameHeight
+    .ENDIF
 
 	mov esi, OFFSET map
 	add esi, eax
@@ -111,13 +112,14 @@ getMap MACRO x:REQ, y:REQ, z:REQ
 	mov eax, 0
 	mov ebx, 0
 
-	mov al, gameWidth
+	mov al, gameHeight
 	mov bl, x
 	mul bl
 	add al, y
-	mov bl, z
-	inc bl
-	mul bl
+    mov bl, z
+    .IF bl == 1
+        add ax, gameWidth * gameHeight
+    .ENDIF
 
 	mov esi, OFFSET map
 	add esi, eax
