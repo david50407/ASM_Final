@@ -6,6 +6,10 @@ includelib \masm32\lib\user32.lib
 includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\msvcrt.lib
 
+.MODEL small,c
+
+showLastError    PROTO
+
 printInteger PROTO, x:WORD, y:WORD, value:DWORD
 printString	 PROTO, x:WORD, y:WORD, string:DWORD
 turn         PROTO
@@ -152,7 +156,10 @@ printInteger PROC USES eax,
 	mov pos.x, ax
 	mov ax, y
 	mov pos.y, ax
-	INVOKE SetConsoleCursorPosition, consoleHandle, ADDR pos
+	INVOKE SetConsoleCursorPosition, consoleHandle, DWORD PTR [pos]
+	.IF ax == 0
+		INVOKE showLastError
+	.ENDIF
     INVOKE crt_printf, ADDR formatInteger, value
 	ret
 printInteger ENDP
@@ -170,7 +177,10 @@ printString PROC USES ecx edx,
 	mov pos.x, dx
 	mov dx, y
 	mov pos.y, dx
-	INVOKE SetConsoleCursorPosition, consoleHandle, ADDR pos
+	INVOKE SetConsoleCursorPosition, consoleHandle, DWORD PTR [pos]
+	.IF ax == 0
+		INVOKE showLastError
+	.ENDIF
     INVOKE crt_printf, string
 	ret
 printString ENDP
