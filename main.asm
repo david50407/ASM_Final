@@ -22,10 +22,10 @@ initialize   PROTO
 gameWidth = 40
 gameHeight = 23
 map           SBYTE gameWidth * gameHeight * 2 dup(?)
-head          BYTE ?, ?
-tail          BYTE ?, ?
-direct        SBYTE ?, ?
-forbidDirect  SBYTE ?, ?
+head          BYTE ?, ?, ?, ?
+tail          BYTE ?, ?, ?, ?
+direct        SBYTE ?, ?, ?, ?
+forbidDirect  SBYTE ?, ?, ?, ?
 grow          BYTE ?, ?
 food          BYTE ?, ?
 speed         BYTE ?
@@ -337,7 +337,7 @@ LOUT:
 	setMap 19, 9, 1, 9
 	setMap 20, 9, 0, 21
 	setMap 20, 9, 1, 9
-	setMap 21, 9, 0, 0
+	setMap 21, 9, 0, 100
 	mov earn, 1
 	mov over, 0
 	mov score, 0
@@ -366,8 +366,24 @@ LOUT:
 
 	.IF player == 2
 
-		; Todo:
-		; until the basic snake done, lets do the 2 players
+        mov score + TYPE score , 0
+        setMap 18, 12, 0, 19
+        setMap 18, 12, 1, 12
+        setMap 19, 12, 0, 20
+        setMap 19, 12, 1, 12
+        setMap 20, 12, 0, 21
+        setMap 20, 12, 1, 12
+        setMap 21, 12, 0, 100
+        mov head + 2 * TYPE head, 21
+        mov head + 3 * TYPE head, 12
+        mov tail + 2 * TYPE tail, 18
+        mov tail + 3 * TYPE tail, 12
+        mov direct + 2 * TYPE direct, 1
+        mov direct + 3 * TYPE direct, 0
+        mov forbidDirect + 2 * TYPE forbidDirect, -1
+        mov forbidDirect + 3 * TYPE forbidDirect, 0
+        mov grow + TYPE grow, 0
+        mov leng + TYPE leng, 4
 
 	.ENDIF
 
