@@ -198,7 +198,31 @@ START_turn:
    .ENDIF
 
    .IF player == 2
-      ; do until player1 done.
+      .IF al == 'w'
+         .IF forbidDirect[2] == 0 && forbidDirect[3] == -1
+            jmp START_turn
+         .ENDIF
+         mov direct[2], 0
+         mov direct[3], -1
+      .ELSEIF al == 'd'
+         .IF forbidDirect[2] == 1 && forbidDirect[3] == 0
+            jmp START_turn
+         .ENDIF
+         mov direct[2], 1
+         mov direct[3], 0
+      .ELSEIF al == 's'
+         .IF forbidDirect[2] == 0 && forbidDirect[3] == 1
+            jmp START_turn
+         .ENDIF
+         mov direct[2], 0
+         mov direct[3], 1
+      .ELSEIF al == 'a'
+         .IF forbidDirect[2] == -1 && forbidDirect[3] == 0
+            jmp START_turn
+         .ENDIF
+         mov direct[2], -1
+         mov direct[3], 0
+      .ENDIF
    .ENDIF
 
    .IF al == -32
