@@ -37,7 +37,8 @@ leng          WORD ?, ?
 player        BYTE  ?
 
 foodImage     BYTE "¡°", 0
-initSnake     BYTE "¡´¡´¡´¡·", 0
+initP1Snake   BYTE "¡´¡´¡´¡·", 0
+initP2Snake   BYTE "¡´¡´¡´¡ó", 0
 
 restartMsg    BYTE "Play Again(Y/N)", 0
 scoreMsg      BYTE "Score:", 0
@@ -48,11 +49,13 @@ idk           BYTE "¢i", 0
 space         BYTE " ", 0
 space2        BYTE "  ", 0
 space13       BYTE "             ", 0
-
 headP1Image   BYTE "¡·", 0
 headP2Image   BYTE "¡ó", 0
 bodyImage     BYTE "¡´", 0
 waitMsg       BYTE "Wait:", 0
+p1WinMsg      BYTE "1P wins", 0
+p2WinMsg      BYTE "Tie", 0
+tieMsg        BYTE "2P wins", 0
 
 consoleHandle DWORD ?
 threadID      DWORD ?
@@ -84,7 +87,9 @@ setMap MACRO x:REQ, y:REQ, z:REQ, value:REQ
 	mov al, gameHeight
 	mov bl, x
 	mul bl
-	add al, y
+    mov bl, y
+    movzx ebx, bl
+	add eax, ebx
     mov bl, z
     .IF bl == 1
         add ax, gameWidth * gameHeight
@@ -114,7 +119,9 @@ getMap MACRO x:REQ, y:REQ, z:REQ
 	mov al, gameHeight
 	mov bl, x
 	mul bl
-	add al, y
+    mov bl, y
+    movzx ebx, bl
+	add eax, ebx
     mov bl, z
     .IF bl == 1
         add ax, gameWidth * gameHeight
@@ -379,14 +386,12 @@ LOUT:
 	mov eax, score
 	INVOKE printInteger, 21, 0, eax
 	INVOKE printString, 35, 0, ADDR lengthMsg
-    mov eax, 0
-	mov ax, leng
+	movzx eax, leng
 	INVOKE printInteger, 42, 0, eax
 	INVOKE printString, 55, 0, ADDR lifeMsg
-    mov eax, 0
-	mov al, life
+	movzx eax, life
 	INVOKE printInteger, 60, 0, eax
-	INVOKE printString, 36, 10, ADDR initSnake
+	INVOKE printString, 36, 10, ADDR initP1Snake
 
 	.IF player == 2
 
@@ -408,29 +413,20 @@ LOUT:
         mov forbidDirect + 3 * TYPE forbidDirect, 0
         mov grow + TYPE grow, 0
         mov leng + TYPE leng, 4
+        mov earn + TYPE earn, 1
+        mov life + TYPE life, 3
+        INVOKE printString, 15, 24, ADDR scoreMsg
+	    mov eax, score
+	    INVOKE printInteger, 21, 24, eax
+	    INVOKE printString, 35, 24, ADDR lengthMsg
+	    movzx eax, leng + TYPE leng
+	    INVOKE printInteger, 42, 24, eax
+	    INVOKE printString, 55, 24, ADDR lifeMsg
+	    movzx eax, life + TYPE life
+	    INVOKE printInteger, 60, 24, eax
+	    INVOKE printString, 36, 13, ADDR initP2Snake
 
 	.ENDIF
-
-    mov i, 0
-L3:
-    .IF i == 40
-        jmp LOUT2
-    .ENDIF
-    mov j, 0
-L4:
-    .IF j == 23
-        jmp L3END
-    .ENDIF
-    getMap i, j, 0
-    .IF al == 0
-        INVOKE printMapItem, i, j, ADDR idk
-    .ENDIF
-    inc j
-    loop L4
-L3END:
-    inc i
-    loop L3
-LOUT2:
 
     INVOKE GetSystemTime, ADDR _st
     movzx  eax, SYSTEMTIME.wMilliseconds[_st]
@@ -451,7 +447,7 @@ revive PROC USES eax ebx ecx edx,
         mov al, tail
         mov tmp1, al
         mov al, tail + TYPE tail
-        mov tmp1 + TYPE tail, al
+        mov tmp1 + TYPE tmp1, al
 
         mov ecx, 3
 L1:
@@ -520,7 +516,76 @@ LOUT:
 
     .ELSE
 
-        ; 2P snake
+        mov leng + TYPE leng, 4
+        mov al, tail + 2 * TYPE tail
+        mov tmp1, al
+        mov al, tail + 3 * TYPE tail
+        mov tmp1 + TYPE tmp1, al
+
+        mov ecx, 3
+L2:
+        mov al, tmp1
+        mov tmp2, al
+        mov al, tmp1 + TYPE tmp1
+        mov tmp2 + TYPE tmp2, al
+        getMap tmp2, tmp2 + TYPE tmp2, 0
+        mov tmp1, al
+        getMap tmp2, tmp2 + TYPE tmp2, 1
+        mov tmp1 + TYPE tmp1, al
+        loop L2
+
+        mov al, tmp1
+        mov head + 2 * TYPE head, al
+        mov al, tmp1 + TYPE tmp1
+        mov head + 3 * TYPE head, al
+        mov al, tmp1
+        sub al, tmp2
+        mov direct + 2 * TYPE direct, al
+        mov al, tmp1 + TYPE tmp1
+        sub al, tmp2 + TYPE tmp2
+        mov direct + 3 * TYPE direct, al
+        mov al, direct + 2 * TYPE direct
+        neg al
+        mov forbidDirect + 2 * TYPE forbidDirect, al
+        mov al, direct + 3 * TYPE direct
+        neg al
+        mov forbidDirect + 3 * TYPE forbidDirect, al
+
+        getMap tmp1, tmp1 + TYPE tmp1, 0
+        .IF al != 100
+            mov al, tmp1
+            mov tmp2, al
+            mov al, tmp1 + TYPE tmp1
+            mov tmp2 + TYPE tmp2, al
+            getMap tmp2, tmp2 + TYPE tmp2, 0
+            mov tmp1, al
+            getMap tmp2, tmp2 + TYPE tmp2, 1
+            mov tmp1 + TYPE tmp1, al
+
+LWHITE2:     
+            getMap tmp1, tmp1 + TYPE tmp1, 0
+            .IF al == 100
+                jmp LOUT2
+            .ENDIF
+
+            mov al, tmp1
+            mov tmp2, al
+            mov al, tmp1 + TYPE tmp1
+            mov tmp2 + TYPE tmp2, al
+            getMap tmp2, tmp2 + TYPE tmp2, 0
+            mov tmp1, al
+            getMap tmp2, tmp2 + TYPE tmp2, 1
+            mov tmp1 + TYPE tmp1, al
+            setMap tmp2, tmp2 + TYPE tmp2, 0, -1
+            INVOKE printMapItem, tmp2, tmp2 + TYPE tmp2, ADDR space2
+            jmp LWHITE2
+
+LOUT2:       
+            setMap tmp1, tmp1 + TYPE tmp1, 0, -1
+            INVOKE printMapItem, tmp1, tmp1 + TYPE tmp1, ADDR space2
+        .ENDIF
+        setMap head + 2 * TYPE head, head + 3 * TYPE head, 0, 100
+        INVOKE printMapItem, head + 2 * TYPE head, head + 3 * TYPE head, ADDR headP2Image
 
     .ENDIF
 
@@ -536,6 +601,7 @@ revive ENDP
 move PROC USES eax ebx ecx,
 
     LOCAL th[4]:BYTE
+    LOCAL tmp[2]:BYTE
 ;--------------------------------
 START_move:
    
@@ -559,25 +625,88 @@ START_move:
    div bl
    mov th[1], ah
 
-   ; initialize th[2] and th[3] here until player1 done.
-
+   mov ax, 0
+   mov al, head[2]
+   add al, direct[2]
+   add al, 40
+   mov bl, 40
+   div bl
+   mov th[2], ah
+ 
+   mov ax, 0
+   mov al, head[3]
+   add al, direct[3]
+   add al, 23
+   mov bl, 23
+   div bl
+   mov th[3], ah
+ 
    getMap th[0], th[1], 0
-
-   .IF player == 2 ; && (s[th[0]][th[1]][0] >= 0 && s[th[2]][th[3]][0] >= 0 || (th[0] == th[2] && th[1] == th[3]))
-      ; do until player1 done.
+   mov bh, al
+   getMap th[2], th[3], 0
+   mov bl, al
+   mov dh, th[2]
+   mov dl, th[3]
+   getMap th[0], th[1], 0
+ 
+   .IF player == 2 && ((bh != -1 && bh != -2 && bl != -1 && bl != -2) || (th[0] == dh && th[1] == dl))
+      dec life
+      dec life[1]
+      shr score, 1
+      shr score[4], 1
+      .IF life == 0 || life[1] == 0
+         jmp END_move
+      .ENDIF
+      INVOKE printString, 21, 0, OFFSET space13
+      INVOKE printString, 21, 24, OFFSET space13
+      mov eax, score
+      INVOKE printInteger, 21, 0, eax
+      mov eax, score[4]
+      INVOKE printInteger, 21, 24, eax
+      INVOKE printString, 42, 0, OFFSET space13
+      INVOKE printString, 42, 24, OFFSET space13
+      INVOKE printInteger, 42, 0, 4
+      INVOKE printInteger, 42, 24, 4
+      movzx eax, life
+      INVOKE printInteger, 60, 0, eax
+      movzx eax, life[1]
+      INVOKE printInteger, 60, 24, eax
+      INVOKE revive, 0
+      INVOKE revive, 1
+      call waiting
+      jmp START_move
    .ELSEIF al != -1 && al != -2
       .IF player == 2
-         ; do until player1 done.
+         shr score, 1
+         mov eax, score
+         add score[4], eax
+         dec life
+         .IF life == 0
+            jmp END_move
+         .ENDIF
+         INVOKE printString, 21, 0, OFFSET space13
+         INVOKE printString, 21, 24, OFFSET space13
+         mov eax, score
+         INVOKE printInteger, 21, 0, eax
+         mov eax, score[4]
+         INVOKE printInteger, 21, 24, eax
+         INVOKE printString, 42, 0, OFFSET space13
+         INVOKE printInteger, 42, 0, 4
+         movzx eax, life
+         INVOKE printInteger, 60, 0, eax
+         INVOKE revive, 0
+         call waiting
+         jmp START_move
       .ELSE
          dec life
          .IF life == 0
             jmp END_move
          .ENDIF
          shr score, 1
-         INVOKE printString, 21, 0, ADDR space13
+         INVOKE printString, 21, 0, OFFSET space13
          mov eax, score
          INVOKE printInteger, 21, 0, eax
-         INVOKE printString, 42, 0, ADDR space13
+         INVOKE printString, 42, 0, OFFSET space13
          INVOKE printInteger, 42, 0, 4
          movzx eax, life
          INVOKE printInteger, 60, 0, eax
@@ -585,8 +714,27 @@ START_move:
          call waiting
          jmp START_move
       .ENDIF
-   .ELSEIF player == 2 ; &&s[th[2]][th[3]][0]>=0
-      ; do until player1 done.
+   .ELSEIF player == 2 && bl != -1 && bl != -2
+      shr score[4], 1
+      mov eax, score[4]
+      add score, eax
+      dec life[1]
+      .IF life[1] == 0
+         jmp END_move
+      .ENDIF
+      INVOKE printString, 21, 0, OFFSET space13
+      INVOKE printString, 21, 24, OFFSET space13
+      mov eax, score
+      INVOKE printInteger, 21, 0, eax
+      mov eax, score[4]
+      INVOKE printInteger, 21, 24, eax
+      INVOKE printString, 42, 24, OFFSET space13
+      INVOKE printInteger, 42, 24, 4
+      movzx eax, life[1]
+      INVOKE printInteger, 60, 24, eax
+      INVOKE revive, 1
+      call waiting
+      jmp START_move
    .ENDIF
 
    INVOKE printMapItem, head[0], head[1], ADDR bodyImage
@@ -599,7 +747,17 @@ START_move:
    mov al, th[1]
    mov head[1], al
    .IF player == 2
-      ; TODO until player1 done.
+
+       INVOKE printMapItem, head[2], head[3], ADDR bodyImage
+       mov dl, th[2]
+       setMap head[2], head[3], 0, dl
+       mov dl, th[3]
+       setMap head[2], head[3], 1, dl
+       mov al, th[2]
+       mov head[2], al
+       mov al, th[3]
+       mov head[3], al
+
    .ENDIF
 
    setMap head[0], head[1], 0, 100
@@ -611,7 +769,16 @@ START_move:
    neg al
    mov forbidDirect[1], al
    .IF player == 2
-      ; TODO until player1 done.
+
+       setMap head[2], head[3], 0, 100
+       INVOKE printMapItem, head[2], head[3], ADDR headP2Image
+       mov al, direct[2]
+       neg al
+       mov forbidDirect[2], al
+       mov al, direct[3]
+       neg al
+       mov forbidDirect[3], al
+
    .ENDIF
 
    .IF grow
@@ -621,26 +788,43 @@ START_move:
       INVOKE printInteger, 42, 0, eax
    .ELSE
       INVOKE printMapItem, tail[0], tail[1], ADDR space2
-      mov dh, tail[0]
-      mov dl, tail[1]
-      getMap dh, dl, 0
+      mov al, tail[0]
+      mov tmp[0], al
+      mov al, tail[1]
+      mov tmp[1], al
+      getMap tmp[0], tmp[1], 0
       mov tail[0], al
-      getMap dh, dl, 1
+      getMap tmp[0], tmp[1], 1
       mov tail[1], al
-      setMap dh, dl, 0, -1
+      setMap tmp[0], tmp[1], 0, -1
    .ENDIF
    .IF grow[1]
-      ; do until player1 done.
+        
+      dec grow[1]
+      inc leng + TYPE leng
+      movzx eax, leng + TYPE leng
+      INVOKE printInteger, 42, 24, eax
+
    .ELSEIF player == 2
-      ; do until player1 done.
+
+      INVOKE printMapItem, tail[2], tail[3], ADDR space2
+      mov al, tail[2]
+      mov tmp[0], al
+      mov al, tail[3]
+      mov tmp[1], al
+      getMap tmp[0], tmp[1], 0
+      mov tail[2], al
+      getMap tmp[0], tmp[1], 1
+      mov tail[3], al
+      setMap tmp[0], tmp[1], 0, -1
+
    .ENDIF
 
    mov ah, food[0]
    mov al, food[1]
    .IF head[0] == ah && head[1] == al
       add grow, 3
-      mov eax, 0
-      mov ax, earn
+      movzx eax, earn
       add score, eax
       inc earn
       mov eax, score
@@ -648,8 +832,16 @@ START_move:
       INVOKE foodRevive
    .ENDIF
 
-   .IF player == 2 ; && head2[0] == food[0] && head2[1] == food[1]
-      ; do until player1 done.
+   .IF player == 2 && head[2] == ah && head[3] == al
+        
+      add grow[1], 3
+      movzx eax, earn + TYPE earn
+      add score + TYPE score, eax
+      inc earn + TYPE earn
+      mov eax, score + TYPE score
+      INVOKE printInteger, 21, 24, eax
+      INVOKE foodRevive
+
    .ENDIF
 
    jmp START_move
@@ -753,7 +945,24 @@ gameover PROC USES eax
 
     .IF player == 2
 
-        ; TODO
+        INVOKE printString, 15, 24, ADDR scoreMsg
+        mov eax, score + TYPE score 
+        INVOKE printInteger, 21, 24, eax
+        INVOKE printString, 35, 24, ADDR lengthMsg
+        movzx eax, leng + TYPE leng
+        INVOKE printInteger, 42, 24, eax
+        INVOKE printString, 55, 24, ADDR lifeMsg
+        movzx eax, life + TYPE life
+        INVOKE printInteger, 61, 24, eax
+
+        mov eax, score + TYPE score
+        .IF eax == score
+            INVOKE printString, 38, 2, ADDR tieMsg
+        .ELSEIF eax > score
+            INVOKE printString, 36, 2, ADDR p2WinMsg
+        .ELSE
+            INVOKE printString, 36, 2, ADDR p1WinMsg
+        .ENDIF
 
     .ENDIF
 
@@ -791,6 +1000,7 @@ start@0 PROC
 	; INVOKE printInteger, 5, 5, 5
 	; INVOKE printString, 15, 15, ADDR testmsg
 	; INVOKE turn
+    mov player, 2
 
 restart:
 	INVOKE initialize
