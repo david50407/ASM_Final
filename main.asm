@@ -54,8 +54,8 @@ headP2Image   BYTE "¡ó", 0
 bodyImage     BYTE "¡´", 0
 waitMsg       BYTE "Wait:", 0
 p1WinMsg      BYTE "1P wins", 0
-p2WinMsg      BYTE "Tie", 0
-tieMsg        BYTE "2P wins", 0
+p2WinMsg      BYTE "2P wins", 0
+tieMsg        BYTE "Tie", 0
 
 consoleHandle DWORD ?
 threadID      DWORD ?
