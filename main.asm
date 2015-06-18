@@ -468,151 +468,81 @@ revive PROC USES eax ebx ecx edx,
     LOCAL tmp1[2]:BYTE
     LOCAL tmp2[2]:BYTE
     
-    .IF mode == 0
-        mov leng, 4
-        mov al, tail
-        mov tmp1, al
-        mov al, tail + TYPE tail
-        mov tmp1 + TYPE tmp1, al
+    movzx ebx, mode
+    mov leng[ebx * TYPE WORD], 4
+    mov al, tail[ebx * TYPE BYTE]
+    mov tmp1, al
+    mov al, tail[ebx * TYPE BYTE + TYPE BYTE]
+    mov tmp2, al
+    mov ecx, 3
 
-        mov ecx, 3
-L1:
+L:
+    mov al, tmp1
+    mov tmp2, al
+    mov al, tmp1[1]
+    mov tmp2[1], al
+    getMap tmp2, tmp2[1], 0
+    mov tmp1, al
+    getMap tmp2, tmp2[1], 1
+    mov tmp1[1], al
+    loop L
+    
+    mov al, tmp1
+    mov head[ebx*2], al
+    mov al, tmp1[1]
+    mov head[ebx*2+1], al
+    mov al, tmp1
+    sub al, tmp2
+    mov direct[ebx*2], al
+    mov al, tmp1[1]
+    sub al, tmp2[1]
+    mov direct[ebx*2+1], al
+    mov al, direct[ebx*2]
+    neg al
+    mov forbidDirect[ebx*2], al
+    mov al, direct[ebx*2+1]
+    neg al
+    mov forbidDirect[ebx*2+1], al
+        
+    getMap tmp1, tmp1[1], 0
+    .IF al != 100
         mov al, tmp1
         mov tmp2, al
-        mov al, tmp1 + TYPE tmp1
-        mov tmp2 + TYPE tmp2, al
-        getMap tmp2, tmp2 + TYPE tmp2, 0
+        mov al, tmp1[1]
+        mov tmp2[1], al
+        getMap tmp2, tmp2[1], 0
         mov tmp1, al
-        getMap tmp2, tmp2 + TYPE tmp2, 1
-        mov tmp1 + TYPE tmp1, al
-        loop L1
-
-        mov al, tmp1
-        mov head, al
-        mov al, tmp1 + TYPE tmp1
-        mov head + TYPE head, al
-        mov al, tmp1
-        sub al, tmp2
-        mov direct, al
-        mov al, tmp1 + TYPE tmp1
-        sub al, tmp2 + TYPE tmp2
-        mov direct + TYPE direct, al
-        mov al, direct
-        neg al
-        mov forbidDirect, al
-        mov al, direct + TYPE direct
-        neg al
-        mov forbidDirect + TYPE forbidDirect, al
-        
-        getMap tmp1, tmp1 + TYPE tmp1, 0
-        .IF al != 100
-            mov al, tmp1
-            mov tmp2, al
-            mov al, tmp1 + TYPE tmp1
-            mov tmp2 + TYPE tmp2, al
-            getMap tmp2, tmp2 + TYPE tmp2, 0
-            mov tmp1, al
-            getMap tmp2, tmp2 + TYPE tmp2, 1
-            mov tmp1 + TYPE tmp1, al
+        getMap tmp2, tmp2[1], 1
+        mov tmp1[1], al
 
 LWHITE:     
-            getMap tmp1, tmp1 + TYPE tmp1, 0
-            .IF al == 100
-                jmp LOUT
-            .ENDIF
-
-            mov al, tmp1
-            mov tmp2, al
-            mov al, tmp1 + TYPE tmp1
-            mov tmp2 + TYPE tmp2, al
-            getMap tmp2, tmp2 + TYPE tmp2, 0
-            mov tmp1, al
-            getMap tmp2, tmp2 + TYPE tmp2, 1
-            mov tmp1 + TYPE tmp1, al
-            setMap tmp2, tmp2 + TYPE tmp2, 0, -1
-            INVOKE printMapItem, tmp2, tmp2 + TYPE tmp2, ADDR space2
-            jmp LWHITE
-
-LOUT:       
-            setMap tmp1, tmp1 + TYPE tmp1, 0, -1
-            INVOKE printMapItem, tmp1, tmp1 + TYPE tmp1, ADDR space2
+        getMap tmp1, tmp1[1], 0
+        .IF al == 100
+            jmp LOUT
         .ENDIF
-        setMap head, head + TYPE head, 0, 100
-        INVOKE printMapItem, head, head + TYPE head, ADDR headP1Image
 
-    .ELSE
-
-        mov leng + TYPE leng, 4
-        mov al, tail + 2 * TYPE tail
-        mov tmp1, al
-        mov al, tail + 3 * TYPE tail
-        mov tmp1 + TYPE tmp1, al
-
-        mov ecx, 3
-L2:
         mov al, tmp1
         mov tmp2, al
-        mov al, tmp1 + TYPE tmp1
-        mov tmp2 + TYPE tmp2, al
-        getMap tmp2, tmp2 + TYPE tmp2, 0
+        mov al, tmp1[1]
+        mov tmp2[1], al
+        getMap tmp2, tmp2[1], 0
         mov tmp1, al
-        getMap tmp2, tmp2 + TYPE tmp2, 1
-        mov tmp1 + TYPE tmp1, al
-        loop L2
+        getMap tmp2, tmp2[1], 1
+        mov tmp1[1], al
+        setMap tmp2, tmp2[1], 0, -1
+        INVOKE printMapItem, tmp2, tmp2[1], ADDR space2
+        jmp LWHITE
 
-        mov al, tmp1
-        mov head + 2 * TYPE head, al
-        mov al, tmp1 + TYPE tmp1
-        mov head + 3 * TYPE head, al
-        mov al, tmp1
-        sub al, tmp2
-        mov direct + 2 * TYPE direct, al
-        mov al, tmp1 + TYPE tmp1
-        sub al, tmp2 + TYPE tmp2
-        mov direct + 3 * TYPE direct, al
-        mov al, direct + 2 * TYPE direct
-        neg al
-        mov forbidDirect + 2 * TYPE forbidDirect, al
-        mov al, direct + 3 * TYPE direct
-        neg al
-        mov forbidDirect + 3 * TYPE forbidDirect, al
+LOUT:       
+        setMap tmp1, tmp1[1], 0, -1
+        INVOKE printMapItem, tmp1, tmp1[1], ADDR space2
+    .ENDIF
+    setMap head[ebx*2], head[ebx*2+1], 0, 100
 
-        getMap tmp1, tmp1 + TYPE tmp1, 0
-        .IF al != 100
-            mov al, tmp1
-            mov tmp2, al
-            mov al, tmp1 + TYPE tmp1
-            mov tmp2 + TYPE tmp2, al
-            getMap tmp2, tmp2 + TYPE tmp2, 0
-            mov tmp1, al
-            getMap tmp2, tmp2 + TYPE tmp2, 1
-            mov tmp1 + TYPE tmp1, al
-
-LWHITE2:     
-            getMap tmp1, tmp1 + TYPE tmp1, 0
-            .IF al == 100
-                jmp LOUT2
-            .ENDIF
-
-            mov al, tmp1
-            mov tmp2, al
-            mov al, tmp1 + TYPE tmp1
-            mov tmp2 + TYPE tmp2, al
-            getMap tmp2, tmp2 + TYPE tmp2, 0
-            mov tmp1, al
-            getMap tmp2, tmp2 + TYPE tmp2, 1
-            mov tmp1 + TYPE tmp1, al
-            setMap tmp2, tmp2 + TYPE tmp2, 0, -1
-            INVOKE printMapItem, tmp2, tmp2 + TYPE tmp2, ADDR space2
-            jmp LWHITE2
-
-LOUT2:       
-            setMap tmp1, tmp1 + TYPE tmp1, 0, -1
-            INVOKE printMapItem, tmp1, tmp1 + TYPE tmp1, ADDR space2
-        .ENDIF
-        setMap head + 2 * TYPE head, head + 3 * TYPE head, 0, 100
-        INVOKE printMapItem, head + 2 * TYPE head, head + 3 * TYPE head, ADDR headP2Image
-
+    .IF mode == 1
+        INVOKE printMapItem, head[ebx*2], head[ebx*2+1], ADDR headP1Image
+    .ELSEIF mode == 2
+        INVOKE printMapItem, head[ebx*2], head[ebx*2+1], ADDR headP2Image
     .ENDIF
 
     .IF food == 100
