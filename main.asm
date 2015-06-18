@@ -72,6 +72,17 @@ e2            BYTE "rdrrruruululllldldlddddrdrrrrurr", 0
 r1            BYTE "rddddddd", 0
 r2            BYTE "rurrrdr", 0
 
+menuState     BYTE ?
+menuSelect    BYTE ?, ?
+mainMenuMsg1  BYTE "1 Player Mode", 0
+mainMenuMsg2  BYTE "2 Player Mode", 0
+mainMenuMsg3  BYTE "Setting", 0
+mainMenuMsg4  BYTE "Exit", 0
+menuHead      BYTE "¢~¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢¡", 0
+menuBody      BYTE "¢x¡@¡@¡@¡@                                        ¡@¢x", 0
+menuFoot      BYTE "¢¢¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢£", 0
+optionCount   BYTE ?
+
 .code
 ;------------------------------------------
 setMap MACRO x:REQ, y:REQ, z:REQ, value:REQ
@@ -159,7 +170,7 @@ printInteger PROC USES eax,
 printInteger ENDP
 
 ;--------------------------------
-printString PROC USES ecx edx,
+printString PROC USES eax ecx edx,
 	x:WORD, y:WORD, string:DWORD
 	LOCAL pos:COORD
 ; x, y: position
@@ -192,7 +203,6 @@ printMapItem PROC USES eax ebx,
 	ret
 printMapItem ENDP
 
-;--------------------------------
 turn PROC USES eax ebx edx
 ;turn the snake's direction
 ;--------------------------------
@@ -982,6 +992,141 @@ gameover PROC USES eax
 
 gameover ENDP
 
+drawMenu PROC
+
+    INVOKE printString, 13, 8, ADDR menuHead
+    movzx ecx, optionCount
+    mov ax, 9
+L1:
+    INVOKE printString, 13, ax, ADDR menuBody
+    inc ax
+    loop L1
+    INVOKE printString, 13, ax, ADDR menuFoot
+
+    .IF menuState == 0
+    
+        INVOKE printString, 35, 9, ADDR mainMenuMsg1
+        INVOKE printString, 35, 10, ADDR mainMenuMsg2
+        INVOKE printString, 35, 11, ADDR mainMenuMsg3
+        INVOKE printString, 35, 12, ADDR mainMenuMsg4
+
+        movzx ax, menuSelect
+        add ax, 9
+        INVOKE printString, 13, ax, ADDR menuBody
+        INVOKE SetConsoleTextAttribute, consoleHandle, 14
+
+        .IF menuSelect == 0
+            INVOKE printString, 35, 9, ADDR mainMenuMsg1
+        .ELSEIF menuSelect == 1
+            INVOKE printString, 35, 10, ADDR mainMenuMsg2
+        .ELSEIF menuSelect == 2
+            INVOKE printString, 35, 11, ADDR mainMenuMsg3
+        .ELSEIF menuSelect == 3
+            INVOKE printString, 35, 12, ADDR mainMenuMsg4
+        .ENDIF
+
+        INVOKE SetConsoleTextAttribute, consoleHandle, 15
+
+    .ELSEIF menuState == 1
+
+    .ENDIF
+
+    ret
+
+drawMenu ENDP
+
+menu PROC
+    
+    mov optionCount, 4
+    mov menuState, 0
+    mov menuSelect, 0
+    mov menuSelect[1], 0
+    
+LWHILE:
+    cls
+    INVOKE drawMenu
+    call crt__getch
+    .IF menuState == 0 ; main menu
+        
+        .IF al == 80
+          
+            inc menuSelect
+            .IF menuSelect >= 4
+                mov menuSelect, 0
+            .ENDIF
+
+        .ELSEIF al == 72
+
+            dec menuSelect
+            .IF menuSelect == -1
+                mov menuSelect, 2
+            .ENDIF
+
+        .ELSEIF al == 13
+
+            .IF menuSelect == 0
+                    
+                mov player, 1
+                jmp LOUT
+
+            .ELSEIF menuSelect == 1
+
+                mov player, 2
+                jmp LOUT
+
+            .ELSEIF menuSelect == 2
+
+                mov menuState, 1
+
+            .ELSEIF menuSelect == 3
+
+                INVOKE ExitProcess, 0
+
+            .ENDIF
+
+        .ENDIF
+
+    .ELSEIF menuState == 1 ; setting menu
+    
+        .IF al == 80
+          
+            dec menuSelect[1]
+            .IF menuSelect[1] == -1
+                mov menuSelect[1], 2
+            .ENDIF
+
+        .ELSEIF al == 72
+
+            inc menuSelect[1]
+            .IF menuSelect[1] >= 5
+                mov menuSelect[1], 0
+            .ENDIF
+
+        .ELSEIF al == 13
+
+            .IF menuSelect == 4 ; back to main menu
+
+                mov menuState, 0
+
+            .ENDIF
+
+        .ELSEIF al == 75 ; left
+
+        .ELSEIF al == 77 ; right
+
+        .ENDIF
+
+    .ENDIF
+     
+
+    jmp LWHILE
+
+LOUT:
+    cls
+    ret
+
+menu ENDP
+
 start@0 PROC
     
     LOCAL structCursorInfo:CONSOLE_CURSOR_INFO
@@ -993,18 +1138,11 @@ start@0 PROC
     INVOKE GetConsoleCursorInfo, consoleHandle, ADDR structCursorInfo
     mov structCursorInfo.bVisible, FALSE
     INVOKE SetConsoleCursorInfo, consoleHandle, ADDR structCursorInfo
-
-    ; INVOKE GetLastError
-
-	; Test function code	
-	; INVOKE printInteger, 5, 5, 5
-	; INVOKE printString, 15, 15, ADDR testmsg
-	; INVOKE turn
-    mov player, 2
-
+PMENU:
+    INVOKE menu
 restart:
-	INVOKE initialize
-	INVOKE printString, 35, 16, ADDR pressEnter
+    INVOKE initialize
+    INVOKE printString, 35, 16, ADDR pressEnter
 PENTER:
 	call crt__getch
 	.IF ax == 13
@@ -1044,7 +1182,7 @@ LOUT:
 	INVOKE printString, 34, 14, ADDR restartMsg
 	call crt__getch
 	.IF al == 'n' || al == 'N'
-        INVOKE ExitProcess, 0
+        jmp PMENU
     .ENDIF
     cls
 	jmp restart
