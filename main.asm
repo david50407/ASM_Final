@@ -5,9 +5,10 @@ include \masm32\include\kernel32.inc
 includelib \masm32\lib\user32.lib 
 includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\msvcrt.lib
+include helper.inc
 
 printInteger PROTO, x:WORD, y:WORD, value:DWORD
-printString	 PROTO, x:WORD, y:WORD, string:DWORD
+printString  PROTO, x:WORD, y:WORD, string:DWORD
 turn         PROTO
 foodRevive   PROTO
 revive       PROTO, mode:BYTE
@@ -85,34 +86,40 @@ optionCount   BYTE ?
 
 .code
 ;------------------------------------------
-setMap MACRO x:REQ, y:REQ, z:REQ, value:REQ
+map3D MACRO x:REQ, y:REQ, z:REQ
 ;x, y, z: index
-;value: in BYTE type!
 ;-----------------------------------------
-	push eax
-	push ebx
-	push esi
-	mov eax, 0
-	mov ebx, 0
+    push eax
+    push ebx
+    xor eax, eax
+    xor ebx, ebx
 
-	mov al, gameHeight
-	mov bl, x
-	mul bl
+    mov al, gameHeight
+    mulb x
     mov bl, y
     movzx ebx, bl
-	add eax, ebx
+    add eax, ebx
     mov bl, z
     .IF bl == 1
         add ax, gameWidth * gameHeight
     .ENDIF
 
-	mov esi, OFFSET map
-	add esi, eax
-	mov SBYTE PTR [esi], value
+    mov esi, OFFSET map
+    add esi, eax
 
-	pop esi
-	pop ebx
-	pop eax
+    pop ebx
+    pop eax
+ENDM
+
+;------------------------------------------
+setMap MACRO x:REQ, y:REQ, z:REQ, value:REQ
+;x, y, z: index
+;value: in BYTE type!
+;-----------------------------------------
+    push esi
+    map3D x, y, z
+    mov SBYTE PTR [esi], value
+    pop esi
 ENDM
 
 ;--------------------------------
@@ -120,31 +127,13 @@ getMap MACRO x:REQ, y:REQ, z:REQ
 ;x, y, z: index
 ;value: in BYTE type!
 ;return
-;	al: map[x][y][z]
+; al: map[x][y][z]
 ;-----------------------------------------
-	push ebx
-	push esi
-	mov eax, 0
-	mov ebx, 0
-
-	mov al, gameHeight
-	mov bl, x
-	mul bl
-    mov bl, y
-    movzx ebx, bl
-	add eax, ebx
-    mov bl, z
-    .IF bl == 1
-        add ax, gameWidth * gameHeight
-    .ENDIF
-
-	mov esi, OFFSET map
-	add esi, eax
-	mov eax, 0
-	mov al, [esi]
-
-	pop esi
-	pop ebx
+    push esi
+    xor eax, eax
+    map3D x, y, z
+    mov al, [esi]
+    pop esi
 ENDM
 
 .data
@@ -153,54 +142,54 @@ formatInteger   BYTE "%d", 0
 .code
 ;--------------------------------
 printInteger PROC USES eax,
-	x:WORD, y:WORD, value:DWORD
-	LOCAL pos:COORD
+  x:WORD, y:WORD, value:DWORD
+  LOCAL pos:COORD
 ; x, y: position
 ; value: the integer to be displayed
 ;
 ; display a integer value on the (x, y)
 ;--------------------------------
-	mov ax, x
-	mov pos.x, ax
-	mov ax, y
-	mov pos.y, ax
-	INVOKE SetConsoleCursorPosition, consoleHandle, DWORD PTR [pos]
+  mov ax, x
+  mov pos.x, ax
+  mov ax, y
+  mov pos.y, ax
+  INVOKE SetConsoleCursorPosition, consoleHandle, DWORD PTR [pos]
     INVOKE crt_printf, ADDR formatInteger, value
-	ret
+  ret
 printInteger ENDP
 
 ;--------------------------------
 printString PROC USES eax ecx edx,
-	x:WORD, y:WORD, string:DWORD
-	LOCAL pos:COORD
+  x:WORD, y:WORD, string:DWORD
+  LOCAL pos:COORD
 ; x, y: position
 ; string: The OFFSET of the string
 ;
 ; display a string on the (x, y)
 ;--------------------------------
-	mov dx, x
-	mov pos.x, dx
-	mov dx, y
-	mov pos.y, dx
-	INVOKE SetConsoleCursorPosition, consoleHandle, DWORD PTR [pos]
+  mov dx, x
+  mov pos.x, dx
+  mov dx, y
+  mov pos.y, dx
+  INVOKE SetConsoleCursorPosition, consoleHandle, DWORD PTR [pos]
     INVOKE crt_printf, string
-	ret
+  ret
 printString ENDP
 
 ;--------------------------------
 printMapItem PROC USES eax ebx,
-	x:WORD, y:WORD, string:DWORD
+  x:WORD, y:WORD, string:DWORD
 ; x, y: position
 ; string: The OFFSET of the string
 ;
 ; display a string on the (x, y)
 ;--------------------------------
-	mov ax, x
-	imul ax, 2
-	mov bx, y
-	add bx, 1
-	INVOKE printString, ax, bx, string
-	ret
+  mov ax, x
+  imul ax, 2
+  mov bx, y
+  add bx, 1
+  INVOKE printString, ax, bx, string
+  ret
 printMapItem ENDP
 
 turn PROC USES eax ebx edx
@@ -278,12 +267,12 @@ turn ENDP
 ;--------------------------------
 foodRevive PROC USES eax ebx ecx edx,
 
-	LOCAL flag:BYTE
+  LOCAL flag:BYTE
     LOCAL i:BYTE
     LOCAL j:BYTE
 ;as title
 ;-------------------------------
-	mov flag, 0
+  mov flag, 0
 
     mov i, 0
 L1:
@@ -307,36 +296,36 @@ L1END:
     loop L1
 
 LOUT:
-	.IF flag == 0
-		mov food, 100
-		jmp LEND
-	.ENDIF
+  .IF flag == 0
+    mov food, 100
+    jmp LEND
+  .ENDIF
 
 CHECK_POS:
     mov edx, 0
     INVOKE crt_rand
     mov ebx, gameWidth
-	xor edx, edx
+  xor edx, edx
     div ebx
     mov food, dl
     mov edx, 0
     INVOKE crt_rand
     mov ebx, gameHeight
-	xor edx, edx
+  xor edx, edx
     div ebx
     mov food + TYPE food, dl
-	getMap food, food + TYPE food, 0
+  getMap food, food + TYPE food, 0
 
-	.IF al == -1
-		jmp SET_FOOD
-	.ENDIF
-	jmp CHECK_POS
+  .IF al == -1
+    jmp SET_FOOD
+  .ENDIF
+  jmp CHECK_POS
 
 SET_FOOD:
-	setMap food, food + TYPE food, 0, -2
-	INVOKE printMapItem, food, food + TYPE food, ADDR foodImage
+  setMap food, food + TYPE food, 0, -2
+  INVOKE printMapItem, food, food + TYPE food, ADDR foodImage
 LEND:
-	ret
+  ret
 foodRevive ENDP
 
 ;--------------------------------
@@ -347,12 +336,12 @@ initialize PROC USES eax ebx ecx
     LOCAL j:BYTE
 ;initialize the snake game
 ;--------------------------------
-	mov al, 50
-	mov speed, al
-	mov al, 3
-	mov life, al
+  mov al, 50
+  mov speed, al
+  mov al, 3
+  mov life, al
 
-	; initilize map array
+  ; initilize map array
     mov i, 0
    
 L1:
@@ -371,19 +360,19 @@ L1END:
     inc i
     loop L1
 LOUT:
-	
-	setMap 18, 9, 0, 19
-	setMap 18, 9, 1, 9
-	setMap 19, 9, 0, 20
-	setMap 19, 9, 1, 9
-	setMap 20, 9, 0, 21
-	setMap 20, 9, 1, 9
-	setMap 21, 9, 0, 100
-	mov earn, 1
-	mov over, 0
-	mov score, 0
-	mov grow, 0
-	mov leng, 4
+  
+  setMap 18, 9, 0, 19
+  setMap 18, 9, 1, 9
+  setMap 19, 9, 0, 20
+  setMap 19, 9, 1, 9
+  setMap 20, 9, 0, 21
+  setMap 20, 9, 1, 9
+  setMap 21, 9, 0, 100
+  mov earn, 1
+  mov over, 0
+  mov score, 0
+  mov grow, 0
+  mov leng, 4
     mov head, 21
     mov head + TYPE head, 9
     mov tail, 18
@@ -392,18 +381,18 @@ LOUT:
     mov direct + TYPE direct, 0
     mov forbidDirect, -1
     mov forbidDirect + TYPE forbidDirect, 0
-	INVOKE printString, 15, 0, ADDR scoreMsg
-	mov eax, score
-	INVOKE printInteger, 21, 0, eax
-	INVOKE printString, 35, 0, ADDR lengthMsg
-	movzx eax, leng
-	INVOKE printInteger, 42, 0, eax
-	INVOKE printString, 55, 0, ADDR lifeMsg
-	movzx eax, life
-	INVOKE printInteger, 60, 0, eax
-	INVOKE printString, 36, 10, ADDR initP1Snake
+  INVOKE printString, 15, 0, ADDR scoreMsg
+  mov eax, score
+  INVOKE printInteger, 21, 0, eax
+  INVOKE printString, 35, 0, ADDR lengthMsg
+  movzx eax, leng
+  INVOKE printInteger, 42, 0, eax
+  INVOKE printString, 55, 0, ADDR lifeMsg
+  movzx eax, life
+  INVOKE printInteger, 60, 0, eax
+  INVOKE printString, 36, 10, ADDR initP1Snake
 
-	.IF player == 2
+  .IF player == 2
 
         mov score + TYPE score , 0
         setMap 18, 12, 0, 19
@@ -426,25 +415,25 @@ LOUT:
         mov earn + TYPE earn, 1
         mov life + TYPE life, 3
         INVOKE printString, 15, 24, ADDR scoreMsg
-	    mov eax, score
-	    INVOKE printInteger, 21, 24, eax
-	    INVOKE printString, 35, 24, ADDR lengthMsg
-	    movzx eax, leng + TYPE leng
-	    INVOKE printInteger, 42, 24, eax
-	    INVOKE printString, 55, 24, ADDR lifeMsg
-	    movzx eax, life + TYPE life
-	    INVOKE printInteger, 60, 24, eax
-	    INVOKE printString, 36, 13, ADDR initP2Snake
+      mov eax, score
+      INVOKE printInteger, 21, 24, eax
+      INVOKE printString, 35, 24, ADDR lengthMsg
+      movzx eax, leng + TYPE leng
+      INVOKE printInteger, 42, 24, eax
+      INVOKE printString, 55, 24, ADDR lifeMsg
+      movzx eax, life + TYPE life
+      INVOKE printInteger, 60, 24, eax
+      INVOKE printString, 36, 13, ADDR initP2Snake
 
-	.ENDIF
+  .ENDIF
 
     INVOKE GetSystemTime, ADDR _st
     movzx  eax, SYSTEMTIME.wMilliseconds[_st]
     INVOKE crt_srand, eax
 
-	INVOKE foodRevive
+  INVOKE foodRevive
 
-	ret
+  ret
 initialize ENDP
 
 revive PROC USES eax ebx ecx edx,
@@ -1144,14 +1133,14 @@ restart:
     INVOKE initialize
     INVOKE printString, 35, 16, ADDR pressEnter
 PENTER:
-	call crt__getch
-	.IF ax == 13
-		jmp START
-	.ENDIF
-	jmp PENTER
+  call crt__getch
+  .IF ax == 13
+    jmp START
+  .ENDIF
+  jmp PENTER
 
 START:
-	mov edx, 17
+  mov edx, 17
 L1:
     .IF dl == 23
         jmp LOUT
@@ -1160,32 +1149,32 @@ L1:
     mov al, 2
     mul dl 
     mov xx, al
-	getMap dl, 15, 0
-	.IF al == 0
-		INVOKE printString, xx, 16, ADDR idk
-	.ELSEIF al == -2
-		INVOKE printString, xx, 16, ADDR foodImage
-	.ELSE
-		INVOKE printString, xx, 16, ADDR space2
-	.ENDIF
-	inc dl
+  getMap dl, 15, 0
+  .IF al == 0
+    INVOKE printString, xx, 16, ADDR idk
+  .ELSEIF al == -2
+    INVOKE printString, xx, 16, ADDR foodImage
+  .ELSE
+    INVOKE printString, xx, 16, ADDR space2
+  .ENDIF
+  inc dl
 
-	jmp L1
+  jmp L1
 
 LOUT:
-	INVOKE CreateThread, NULL, 0, ADDR turn, 0, THREAD_PRIORITY_NORMAL, NULL
-	INVOKE move
+  INVOKE CreateThread, NULL, 0, ADDR turn, 0, THREAD_PRIORITY_NORMAL, NULL
+  INVOKE move
     cls
-	INVOKE gameover
-	mov over, 1
+  INVOKE gameover
+  mov over, 1
     INVOKE keybd_event, VK_SPACE, 0, 0, 0
-	INVOKE printString, 34, 14, ADDR restartMsg
-	call crt__getch
-	.IF al == 'n' || al == 'N'
+  INVOKE printString, 34, 14, ADDR restartMsg
+  call crt__getch
+  .IF al == 'n' || al == 'N'
         jmp PMENU
     .ENDIF
     cls
-	jmp restart
+  jmp restart
 
 start@0 ENDP
 END start@0
