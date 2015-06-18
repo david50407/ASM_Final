@@ -150,40 +150,43 @@ ENDM
 formatInteger   BYTE "%d", 0
 
 .code
+moveCursor MACRO handle:REQ, x:REQ, y:REQ
+    LOCAL position
+    .data
+    position COORD <>
+    .code
+    push eax
+    mov ax, x
+    mov position.x, ax
+    mov ax, y
+    mov position.y, ax
+    INVOKE SetConsoleCursorPosition, handle, DWORD PTR [position]
+    pop eax
+ENDM
 ;--------------------------------
-printInteger PROC USES eax,
+printInteger PROC USES eax ecx edx,
   x:WORD, y:WORD, value:DWORD
-  LOCAL pos:COORD
 ; x, y: position
 ; value: the integer to be displayed
 ;
 ; display a integer value on the (x, y)
 ;--------------------------------
-  mov ax, x
-  mov pos.x, ax
-  mov ax, y
-  mov pos.y, ax
-  INVOKE SetConsoleCursorPosition, consoleHandle, DWORD PTR [pos]
+    moveCursor consoleHandle, x, y
     INVOKE crt_printf, ADDR formatInteger, value
-  ret
+    ret
 printInteger ENDP
 
 ;--------------------------------
 printString PROC USES eax ecx edx,
   x:WORD, y:WORD, string:DWORD
-  LOCAL pos:COORD
 ; x, y: position
 ; string: The OFFSET of the string
 ;
 ; display a string on the (x, y)
 ;--------------------------------
-  mov dx, x
-  mov pos.x, dx
-  mov dx, y
-  mov pos.y, dx
-  INVOKE SetConsoleCursorPosition, consoleHandle, DWORD PTR [pos]
+    moveCursor consoleHandle, x, y
     INVOKE crt_printf, string
-  ret
+    ret
 printString ENDP
 
 ;--------------------------------
