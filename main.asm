@@ -1049,13 +1049,13 @@ menuSelectStyle PROC USES eax ebx ecx edx esi edi
     mov eax, gameWidth / 2 - headImageCount
     mov esi, OFFSET headImage
     mov ecx, headImageCount
-LOOP_HEAD:
+LOOP_HEAD_LIST:
     INVOKE printMapItem, ax, bx, esi
     add esi, 3 ; Next image
     add eax, 2
-    LOOP LOOP_HEAD
+    LOOP LOOP_HEAD_LIST
     ; Print menu END
-	JMP DRAW
+    JMP DRAW
 
 LOOP_MAIN:
     call crt__getch
@@ -1091,66 +1091,128 @@ LOOP_MAIN:
     .ENDIF
 
     .IF al == KEY_ENTER
-        cld
-		xor eax, eax
-		xor ebx, ebx
-        mov al, headStyle[0]
-		mulb 3
-        mov esi, OFFSET headImage
-        add esi, eax
-        mov edi, OFFSET headP1Image
-        mov ecx, 2
-        rep movsb
-        mov bl, bodyColor[0]
-        mov bl, colorCode[bx]
-        mov colorP1, bl
-        .IF player == 2
-            cld
-			mov al, headStyle[1]
-			mulb 3
-            mov esi, OFFSET headImage
-            add esi, eax
-            mov edi, OFFSET headP2Image
-            mov ecx, 2
-            rep movsb
-            mov bl, bodyColor[1]
-            mov bl, colorCode[bx]
-            mov colorP2, bl
-        .ENDIF
         ret
     .ENDIF
 
 DRAW:
-	; Print arrow BEGIN
-	xor edx, edx
+
+    ; Save setting immediately BEGIN
+    xor eax, eax
+    xor ebx, ebx
+    cld
+    mov al, headStyle[0]
+    mulb 3
+    mov esi, OFFSET headImage
+    add esi, eax
+    mov edi, OFFSET headP1Image
+    mov ecx, 2
+    rep movsb
+    mov bl, bodyColor[0]
+    mov bl, colorCode[bx]
+    mov colorP1, bl
+    .IF player == 2
+        cld
+        mov al, headStyle[1]
+        mulb 3
+        mov esi, OFFSET headImage
+        add esi, eax
+        mov edi, OFFSET headP2Image
+        mov ecx, 2
+        rep movsb
+        mov bl, bodyColor[1]
+        mov bl, colorCode[bx]
+        mov colorP2, bl
+    .ENDIF
+    ; Save setting immediately END
+
+    ; Print arrow BEGIN
+    xor edx, edx
     mov ebx, gameHeight / 2 - 2
     mov eax, gameWidth / 2 - headImageCount
     mov ecx, headImageCount
 LOOP_ARROW:
-	.IF dl == headStyle[0]
-		INVOKE printMapItem, ax, bx, OFFSET arrowDOWN
-	.ELSE
-		INVOKE printMapItem, ax, bx, OFFSET space2
-	.ENDIF
-	inc edx
+    .IF dl == headStyle[0]
+        push eax
+        push ecx
+        push edx
+        INVOKE SetConsoleTextAttribute, consoleHandle, colorP1
+        pop edx
+        pop ecx
+        pop eax
+        INVOKE printMapItem, ax, bx, OFFSET arrowDOWN
+    .ELSE
+        INVOKE printMapItem, ax, bx, OFFSET space2
+    .ENDIF
+    inc edx
     add eax, 2
     LOOP LOOP_ARROW
-	.IF player == 2
-	xor edx, edx
-    mov ebx, gameHeight / 2 + 2
-    mov eax, gameWidth / 2 - headImageCount
-    mov ecx, headImageCount
+    .IF player == 2
+        xor edx, edx
+        mov ebx, gameHeight / 2 + 2
+        mov eax, gameWidth / 2 - headImageCount
+        mov ecx, headImageCount
 LOOP_ARROW2:
-	.IF dl == headStyle[1]
-		INVOKE printMapItem, ax, bx, OFFSET arrowUP
-	.ELSE
-		INVOKE printMapItem, ax, bx, OFFSET space2
-	.ENDIF
-	inc edx
-    add eax, 2
-    LOOP LOOP_ARROW2
-	.ENDIF
-	; Print arrow END	
+        .IF dl == headStyle[1]
+            push eax
+            push ecx
+            push edx
+            INVOKE SetConsoleTextAttribute, consoleHandle, colorP2
+            pop edx
+            pop ecx
+            pop eax
+            INVOKE printMapItem, ax, bx, OFFSET arrowUP
+        .ELSE
+            INVOKE printMapItem, ax, bx, OFFSET space2
+        .ENDIF
+        inc edx
+        add eax, 2
+        LOOP LOOP_ARROW2
+    .ENDIF
+    ; Print arrow END
+
+    ; Print preview BEGIN
+    ;; Head / Body
+    INVOKE SetConsoleTextAttribute, consoleHandle, colorP1
+    INVOKE printMapItem, gameWidth - STYLE_PREVIEW_PADD - 1, gameHeight / 2 - 1, OFFSET bodyImage
+    INVOKE printMapItem, gameWidth - STYLE_PREVIEW_PADD - 1, gameHeight / 2    , OFFSET bodyImage
+    INVOKE printMapItem, gameWidth - STYLE_PREVIEW_PADD - 1, gameHeight / 2 + 1, OFFSET headP1Image
+    .IF player == 2
+        INVOKE SetConsoleTextAttribute, consoleHandle, colorP2
+        INVOKE printMapItem, STYLE_PREVIEW_PADD, gameHeight / 2 - 1, OFFSET headP2Image
+        INVOKE printMapItem, STYLE_PREVIEW_PADD, gameHeight / 2    , OFFSET bodyImage
+        INVOKE printMapItem, STYLE_PREVIEW_PADD, gameHeight / 2 + 1, OFFSET bodyImage
+    .ENDIF
+    ;; Color arrow
+    xor ebx, ebx
+    mov bl, bodyColor[0]
+    dec bl
+    optionListRolling bl, colorCodeCount
+    mov bl, colorCode[bx]
+    INVOKE SetConsoleTextAttribute, consoleHandle, bl
+    INVOKE printMapItem, gameWidth - STYLE_PREVIEW_PADD - 1, gameHeight / 2 - 3, OFFSET arrowUP
+    mov bl, bodyColor[0]
+    inc bl
+    optionListRolling bl, colorCodeCount
+    mov bl, colorCode[bx]
+    INVOKE SetConsoleTextAttribute, consoleHandle, bl
+    INVOKE printMapItem, gameWidth - STYLE_PREVIEW_PADD - 1, gameHeight / 2 + 3, OFFSET arrowDOWN
+    .IF player == 2
+        mov bl, bodyColor[1]
+        dec bl
+        optionListRolling bl, colorCodeCount
+        mov bl, colorCode[bx]
+        INVOKE SetConsoleTextAttribute, consoleHandle, bl
+        INVOKE printMapItem, STYLE_PREVIEW_PADD, gameHeight / 2 - 3, OFFSET arrowUP
+        mov bl, bodyColor[1]
+        inc bl
+        optionListRolling bl, colorCodeCount
+        mov bl, colorCode[bx]
+        INVOKE SetConsoleTextAttribute, consoleHandle, bl
+        INVOKE printMapItem,STYLE_PREVIEW_PADD, gameHeight / 2 + 3, OFFSET arrowDOWN
+    .ENDIF
+    ;; Reset color
+    INVOKE SetConsoleTextAttribute, consoleHandle, COLOR_WHITE
+    ; Print preview END
 
     jmp LOOP_MAIN
 
@@ -1184,13 +1246,13 @@ LWHILE:
         .IF menuSelect == 0
                     
             mov player, 1
-			call menuSelectStyle
+            call menuSelectStyle
             jmp LOUT
 
         .ELSEIF menuSelect == 1
 
             mov player, 2
-			call menuSelectStyle
+            call menuSelectStyle
             jmp LOUT
 
         .ELSEIF menuSelect == 2
