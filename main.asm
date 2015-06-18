@@ -8,7 +8,7 @@ includelib \masm32\lib\msvcrt.lib
 include helper.inc
 
 printInteger PROTO, x:WORD, y:WORD, value:DWORD
-printString  PROTO, x:WORD, y:WORD, string:DWORD
+printString	 PROTO, x:WORD, y:WORD, string:DWORD
 turn         PROTO
 foodRevive   PROTO
 revive       PROTO, mode:BYTE
@@ -85,7 +85,7 @@ settingMsg5   BYTE "Back", 0
 headImageCount = 5
 headImage     BYTE "¡·", 0, "¡ó", 0, "¡À", 0, "¡ò", 0, "¢I", 0
 colorCodeCount = 7
-colorCode     BYTE 15, 1, 2, 4, 9, 10, 12
+colorCode     BYTE 15, 9, 10, 11, 12, 13, 14
 headStyle     BYTE 0, 1
 colorStyle    BYTE 0, 0
 menuHead      BYTE "¢~¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢¡", 0
@@ -280,12 +280,12 @@ turn ENDP
 ;--------------------------------
 foodRevive PROC USES eax ebx ecx edx,
 
-  LOCAL flag:BYTE
+	LOCAL flag:BYTE
     LOCAL i:BYTE
     LOCAL j:BYTE
 ;as title
 ;-------------------------------
-  mov flag, 0
+	mov flag, 0
 
     mov i, 0
 L1:
@@ -309,36 +309,36 @@ L1END:
     loop L1
 
 LOUT:
-  .IF flag == 0
-    mov food, 100
-    jmp LEND
-  .ENDIF
+	.IF flag == 0
+		mov food, 100
+		jmp LEND
+	.ENDIF
 
 CHECK_POS:
     mov edx, 0
     INVOKE crt_rand
     mov ebx, gameWidth
-  xor edx, edx
+	xor edx, edx
     div ebx
     mov food, dl
     mov edx, 0
     INVOKE crt_rand
     mov ebx, gameHeight
-  xor edx, edx
+	xor edx, edx
     div ebx
     mov food + TYPE food, dl
-  getMap food, food + TYPE food, 0
+	getMap food, food + TYPE food, 0
 
-  .IF al == -1
-    jmp SET_FOOD
-  .ENDIF
-  jmp CHECK_POS
+	.IF al == -1
+		jmp SET_FOOD
+	.ENDIF
+	jmp CHECK_POS
 
 SET_FOOD:
-  setMap food, food + TYPE food, 0, -2
-  INVOKE printMapItem, food, food + TYPE food, ADDR foodImage
+	setMap food, food + TYPE food, 0, -2
+	INVOKE printMapItem, food, food + TYPE food, ADDR foodImage
 LEND:
-  ret
+	ret
 foodRevive ENDP
 
 ;--------------------------------
@@ -349,12 +349,12 @@ initialize PROC USES eax ebx ecx
     LOCAL j:BYTE
 ;initialize the snake game
 ;--------------------------------
-  mov al, 50
-  mov speed, al
-  mov al, 3
-  mov life, al
+	mov al, 50
+	mov speed, al
+	mov al, 3
+	mov life, al
 
-  ; initilize map array
+	; initilize map array
     mov i, 0
    
 L1:
@@ -374,18 +374,18 @@ L1END:
     loop L1
 
 LOUT:
-    setMap 18, 9, 0, 19
-    setMap 18, 9, 1, 9
-    setMap 19, 9, 0, 20
-    setMap 19, 9, 1, 9
-    setMap 20, 9, 0, 21
-    setMap 20, 9, 1, 9
-    setMap 21, 9, 0, 100
-    mov earn, 1
-    mov over, 0
-    mov score, 0
-    mov grow, 0
-    mov leng, 4
+	setMap 18, 9, 0, 19
+	setMap 18, 9, 1, 9
+	setMap 19, 9, 0, 20
+	setMap 19, 9, 1, 9
+	setMap 20, 9, 0, 21
+	setMap 20, 9, 1, 9
+	setMap 21, 9, 0, 100
+	mov earn, 1
+	mov over, 0
+	mov score, 0
+	mov grow, 0
+	mov leng, 4
     mov head, 21
     mov head + TYPE head, 9
     mov tail, 18
@@ -394,18 +394,22 @@ LOUT:
     mov direct + TYPE direct, 0
     mov forbidDirect, -1
     mov forbidDirect + TYPE forbidDirect, 0
-    INVOKE printString, 15, 0, ADDR scoreMsg
-    mov eax, score
-    INVOKE printInteger, 21, 0, eax
-    INVOKE printString, 35, 0, ADDR lengthMsg
-    movzx eax, leng
-    INVOKE printInteger, 42, 0, eax
-    INVOKE printString, 55, 0, ADDR lifeMsg
-    movzx eax, life
-    INVOKE printInteger, 60, 0, eax
+	INVOKE printString, 15, 0, ADDR scoreMsg
+	mov eax, score
+	INVOKE printInteger, 21, 0, eax
+	INVOKE printString, 35, 0, ADDR lengthMsg
+	movzx eax, leng
+	INVOKE printInteger, 42, 0, eax
+	INVOKE printString, 55, 0, ADDR lifeMsg
+	movzx eax, life
+	INVOKE printInteger, 60, 0, eax
+    movzx eax, colorStyle
+    movzx eax, colorCode[eax]
+    INVOKE SetConsoleTextAttribute, consoleHandle, eax
     INVOKE printString, 36, 10, ADDR bodyImage
     INVOKE printString, 38, 10, ADDR bodyImage
     INVOKE printString, 40, 10, ADDR bodyImage
+    INVOKE SetConsoleTextAttribute, consoleHandle, 7
     INVOKE printString, 42, 10, ADDR headP1Image
 
 	.IF player == 2
@@ -439,9 +443,13 @@ LOUT:
 	    INVOKE printString, 55, 24, ADDR lifeMsg
 	    movzx eax, life + TYPE life
 	    INVOKE printInteger, 60, 24, eax
+        movzx eax, colorStyle[1]
+        movzx eax, colorCode[eax]
+        INVOKE SetConsoleTextAttribute, consoleHandle, eax
         INVOKE printString, 36, 13, ADDR bodyImage
         INVOKE printString, 38, 13, ADDR bodyImage
         INVOKE printString, 40, 13, ADDR bodyImage
+        INVOKE SetConsoleTextAttribute, consoleHandle, 7
         INVOKE printString, 42, 13, ADDR headP2Image
 
 	.ENDIF
@@ -450,9 +458,9 @@ LOUT:
     movzx  eax, SYSTEMTIME.wMilliseconds[_st]
     INVOKE crt_srand, eax
 
-  INVOKE foodRevive
+	INVOKE foodRevive
 
-  ret
+	ret
 initialize ENDP
 
 revive PROC USES eax ebx ecx edx,
@@ -755,18 +763,27 @@ START_move:
       jmp START_move
    .ENDIF
 
-   INVOKE printMapItem, head[0], head[1], ADDR bodyImage
-   mov dl, th[0]
-   setMap head[0], head[1], 0, dl
-   mov dl, th[1]
-   setMap head[0], head[1], 1, dl
-   mov al, th[0]
-   mov head[0], al
-   mov al, th[1]
-   mov head[1], al
-   .IF player == 2
+    movzx eax, colorStyle
+    movzx eax, colorCode[eax]
+    INVOKE SetConsoleTextAttribute, consoleHandle, eax
+    INVOKE printMapItem, head[0], head[1], ADDR bodyImage
+    INVOKE SetConsoleTextAttribute, consoleHandle, 7
 
+    mov dl, th[0]
+    setMap head[0], head[1], 0, dl
+    mov dl, th[1]
+    setMap head[0], head[1], 1, dl
+    mov al, th[0]
+    mov head[0], al
+    mov al, th[1]
+    mov head[1], al
+    .IF player == 2
+
+       movzx eax, colorStyle[1]
+       movzx eax, colorCode[eax]
+       INVOKE SetConsoleTextAttribute, consoleHandle, eax
        INVOKE printMapItem, head[2], head[3], ADDR bodyImage
+       INVOKE SetConsoleTextAttribute, consoleHandle, 7
        mov dl, th[2]
        setMap head[2], head[3], 0, dl
        mov dl, th[3]
@@ -1078,9 +1095,11 @@ L1:
 
         .IF menuSelect[1]  != 4
 
+            INVOKE SetConsoleTextAttribute, consoleHandle, 12
             movzx eax, menuSelect[1]
             add eax, 9
             INVOKE printString, 48, ax,  ADDR pointer
+            INVOKE SetConsoleTextAttribute, consoleHandle, 7
 
         .ELSE
             
@@ -1107,23 +1126,116 @@ LWHILE:
     cls
     INVOKE drawMenu
     call crt__getch
-    .IF menuState == 0 ; main menu
+    
+    .IF al == -32
+
+        call crt__getch
+
+        .IF menuState == 0 ; main menu
         
-        .IF al == 80
+            .IF al == 80
           
-            inc menuSelect
-            .IF menuSelect >= 4
-                mov menuSelect, 0
+                inc menuSelect
+                .IF menuSelect >= 4
+                    mov menuSelect, 0
+                .ENDIF
+
+            .ELSEIF al == 72
+
+                dec menuSelect
+                .IF menuSelect == -1
+                    mov menuSelect, 3
+                .ENDIF
+
             .ENDIF
 
-        .ELSEIF al == 72
+        .ELSEIF menuState == 1 ; setting menu
+    
+            .IF al == 80
+          
+                inc menuSelect[1]
+                .IF menuSelect[1] >= 5
+                    mov menuSelect[1], 0
+                .ENDIF
 
-            dec menuSelect
-            .IF menuSelect == -1
-                mov menuSelect, 2
+            .ELSEIF al == 72
+
+                dec menuSelect[1]
+                .IF menuSelect[1] == -1
+                    mov menuSelect[1], 4
+                .ENDIF
+                
+            .ELSEIF al == 75 ; left
+
+                .IF menuSelect[1] == 0
+
+                    dec headStyle
+                    .IF headStyle == -1
+                        mov headStyle, headImageCount - 1
+                    .ENDIF
+
+                .ELSEIF menuSelect[1] == 1
+
+                    dec colorStyle
+                    .IF colorStyle == -1
+                        mov colorStyle, colorCodeCount - 1
+                    .ENDIF
+
+                .ELSEIF menuSelect[1] == 2
+
+                    dec headStyle[1]
+                    .IF headStyle[1] == -1
+                        mov headStyle[1], headImageCount - 1
+                    .ENDIF
+
+                .ELSEIF menuSelect[1] == 3
+
+                    dec colorStyle[1]
+                    .IF colorStyle[1] == -1
+                        mov colorStyle[1], colorCodeCount - 1
+                    .ENDIF
+
+                .ENDIF
+
+            .ELSEIF al == 77 ; right
+
+                .IF menuSelect[1] == 0
+
+                    inc headStyle
+                    .IF headStyle == headImageCount
+                        mov headStyle, 0
+                    .ENDIF
+
+                .ELSEIF menuSelect[1] == 1
+
+                    inc colorStyle
+                    .IF colorStyle == colorCodeCount
+                        mov colorStyle, 0
+                    .ENDIF
+
+                .ELSEIF menuSelect[1] == 2
+
+                    inc headStyle[1]
+                    .IF headStyle[1] == headImageCount
+                        mov headStyle[1], 0
+                    .ENDIF
+
+                .ELSEIF menuSelect[1] == 3
+
+                    inc colorStyle[1]
+                    .IF colorStyle[1] == colorCodeCount
+                        mov colorStyle[1], 0
+                    .ENDIF
+
+                .ENDIF
+
             .ENDIF
 
-        .ELSEIF al == 13
+        .ENDIF
+
+    .ELSEIF al == 13
+
+        .IF menuState == 0
 
             .IF menuSelect == 0
                     
@@ -1146,25 +1258,7 @@ LWHILE:
 
             .ENDIF
 
-        .ENDIF
-
-    .ELSEIF menuState == 1 ; setting menu
-    
-        .IF al == 80
-          
-            inc menuSelect[1]
-            .IF menuSelect[1] >= 5
-                mov menuSelect[1], 0
-            .ENDIF
-
-        .ELSEIF al == 72
-
-            dec menuSelect[1]
-            .IF menuSelect[1] == -1
-                mov menuSelect[1], 4
-            .ENDIF
-
-        .ELSEIF al == 13
+        .ELSEIF menuState == 1
 
             .IF menuSelect[1] == 4 ; back to main menu
 
@@ -1186,70 +1280,6 @@ LWHILE:
                            
                 mov optionCount, 4
                 mov menuState, 0
-
-            .ENDIF
-
-        .ELSEIF al == 75 ; left
-
-            .IF menuSelect[1] == 0
-
-                dec headStyle
-                .IF headStyle == -1
-                    mov headStyle, headImageCount - 1
-                .ENDIF
-
-            .ELSEIF menuSelect[1] == 1
-
-                dec colorStyle
-                .IF colorStyle == -1
-                    mov colorStyle, colorCodeCount - 1
-                .ENDIF
-
-            .ELSEIF menuSelect[1] == 2
-
-                dec headStyle[1]
-                .IF headStyle[1] == -1
-                    mov headStyle[1], headImageCount - 1
-                .ENDIF
-
-            .ELSEIF menuSelect[1] == 3
-
-                dec colorStyle[1]
-                .IF colorStyle[1] == -1
-                    mov colorStyle[1], colorCodeCount - 1
-                .ENDIF
-
-            .ENDIF
-
-        .ELSEIF al == 77 ; right
-
-            .IF menuSelect[1] == 0
-
-                inc headStyle
-                .IF headStyle == headImageCount
-                    mov headStyle, 0
-                .ENDIF
-
-            .ELSEIF menuSelect[1] == 1
-
-                inc colorStyle
-                .IF colorStyle == colorCodeCount
-                    mov colorStyle, 0
-                .ENDIF
-
-            .ELSEIF menuSelect[1] == 2
-
-                inc headStyle[1]
-                .IF headStyle[1] == headImageCount
-                    mov headStyle[1], 0
-                .ENDIF
-
-            .ELSEIF menuSelect[1] == 3
-
-                inc colorStyle[1]
-                .IF colorStyle[1] == colorCodeCount
-                    mov colorStyle[1], 0
-                .ENDIF
 
             .ENDIF
 
@@ -1282,14 +1312,14 @@ restart:
     INVOKE initialize
     INVOKE printString, 35, 16, ADDR pressEnter
 PENTER:
-  call crt__getch
-  .IF ax == 13
-    jmp START
-  .ENDIF
-  jmp PENTER
+	call crt__getch
+	.IF ax == 13
+		jmp START
+	.ENDIF
+	jmp PENTER
 
 START:
-  mov edx, 17
+	mov edx, 17
 L1:
     .IF dl == 23
         jmp LOUT
@@ -1298,32 +1328,32 @@ L1:
     mov al, 2
     mul dl 
     mov xx, al
-  getMap dl, 15, 0
-  .IF al == 0
-    INVOKE printString, xx, 16, ADDR idk
-  .ELSEIF al == -2
-    INVOKE printString, xx, 16, ADDR foodImage
-  .ELSE
-    INVOKE printString, xx, 16, ADDR space2
-  .ENDIF
-  inc dl
+	getMap dl, 15, 0
+	.IF al == 0
+		INVOKE printString, xx, 16, ADDR idk
+	.ELSEIF al == -2
+		INVOKE printString, xx, 16, ADDR foodImage
+	.ELSE
+		INVOKE printString, xx, 16, ADDR space2
+	.ENDIF
+	inc dl
 
-  jmp L1
+	jmp L1
 
 LOUT:
-  INVOKE CreateThread, NULL, 0, ADDR turn, 0, THREAD_PRIORITY_NORMAL, NULL
-  INVOKE move
+	INVOKE CreateThread, NULL, 0, ADDR turn, 0, THREAD_PRIORITY_NORMAL, NULL
+	INVOKE move
     cls
-  INVOKE gameover
-  mov over, 1
+	INVOKE gameover
+	mov over, 1
     INVOKE keybd_event, VK_SPACE, 0, 0, 0
-  INVOKE printString, 34, 14, ADDR restartMsg
-  call crt__getch
-  .IF al == 'n' || al == 'N'
+	INVOKE printString, 34, 14, ADDR restartMsg
+	call crt__getch
+	.IF al == 'n' || al == 'N'
         jmp PMENU
     .ENDIF
     cls
-  jmp restart
+	jmp restart
 
 start@0 ENDP
 END start@0
