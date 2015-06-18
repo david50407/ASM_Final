@@ -80,10 +80,11 @@ menuSelect    BYTE ?, ?
 mainMenuMsg1  BYTE "1 Player Mode", 0
 mainMenuMsg2  BYTE "2 Player Mode", 0
 mainMenuMsg3  BYTE "Exit", 0
-headImageCount = 5
-headImage     BYTE "¡·", 0, "¡ó", 0, "¡À", 0, "¡ò", 0, "¢I", 0
+headImageCount = 9
+headImage     BYTE "¡·", 0, "¡ó", 0, "¡À", 0, "¡ò", 0, "¢I", 0, "¡³", 0, "¡º", 0, "¡¸", 0, "¡¼", 0
 colorCodeCount = 7
-colorCode     BYTE 15, 1, 2, 4, 9, 10, 12
+colorCode     BYTE COLOR_BRIGHT_WHITE, COLOR_BRIGHT_YELLOW, COLOR_BRIGHT_PURPLE, \
+	COLOR_BRIGHT_RED, COLOR_BRIGHT_VIRIDITY, COLOR_BRIGHT_GREEN, COLOR_BRIGHT_BLUE
 menuHead      BYTE "¢~¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢¡", 0
 menuBody      BYTE "¢x¡@¡@¡@¡@                                        ¡@¢x", 0
 menuFoot      BYTE "¢¢¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢£", 0
