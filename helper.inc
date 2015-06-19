@@ -44,3 +44,20 @@ optionListRolling MACRO val:REQ, len:REQ
 		mov val, 0
 	.ENDIF
 ENDM
+
+PLAYER STRUCT
+
+    head         BYTE ?, ?
+    tail         BYTE ?, ?
+    direct       BYTE ?, ?
+    forbidDirect BYTE ?, ?
+    grow         BYTE ?
+    life         BYTE ?
+    leng         WORD ?
+    earn         WORD ?
+    score        DWORD ?
+    headImage    BYTE "◎", 0
+    bodyImage    BYTE "●", 0
+    color        BYTE ?
+
+PLAYER ENDS
