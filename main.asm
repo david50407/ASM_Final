@@ -1097,7 +1097,8 @@ LOOP_ARROW:
         push eax
         push ecx
         push edx
-        INVOKE SetConsoleTextAttribute, consoleHandle, player[0].color
+		movzx eax, player[0].color
+        INVOKE SetConsoleTextAttribute, consoleHandle, eax
         pop edx
         pop ecx
         pop eax
@@ -1118,7 +1119,8 @@ LOOP_ARROW2:
             push eax
             push ecx
             push edx
-            INVOKE SetConsoleTextAttribute, consoleHandle, player[SIZEOF PLAYER].color
+			movzx eax, player[SIZEOF PLAYER].color
+            INVOKE SetConsoleTextAttribute, consoleHandle, eax
             pop edx
             pop ecx
             pop eax
@@ -1134,12 +1136,14 @@ LOOP_ARROW2:
 
     ; Print preview BEGIN
     ;; Head / Body
-    INVOKE SetConsoleTextAttribute, consoleHandle, player[0].color
+	movzx eax, player[0].color
+    INVOKE SetConsoleTextAttribute, consoleHandle, eax
     INVOKE printMapItem, gameWidth - STYLE_PREVIEW_PADD - 1, gameHeight / 2 - 1, OFFSET bodyImage
     INVOKE printMapItem, gameWidth - STYLE_PREVIEW_PADD - 1, gameHeight / 2    , OFFSET bodyImage
     INVOKE printMapItem, gameWidth - STYLE_PREVIEW_PADD - 1, gameHeight / 2 + 1, ADDR player[0].headImage
     .IF playerCount == 2
-        INVOKE SetConsoleTextAttribute, consoleHandle, player[SIZEOF PLAYER].color
+		movzx eax, player[SIZEOF PLAYER].color
+        INVOKE SetConsoleTextAttribute, consoleHandle, eax
         INVOKE printMapItem, STYLE_PREVIEW_PADD, gameHeight / 2 - 1, ADDR player[SIZEOF PLAYER].headImage
         INVOKE printMapItem, STYLE_PREVIEW_PADD, gameHeight / 2    , OFFSET bodyImage
         INVOKE printMapItem, STYLE_PREVIEW_PADD, gameHeight / 2 + 1, OFFSET bodyImage
@@ -1150,26 +1154,26 @@ LOOP_ARROW2:
     dec bl
     optionListRolling bl, colorCodeCount
     mov bl, colorCode[bx]
-    INVOKE SetConsoleTextAttribute, consoleHandle, bl
+    INVOKE SetConsoleTextAttribute, consoleHandle, ebx
     INVOKE printMapItem, gameWidth - STYLE_PREVIEW_PADD - 1, gameHeight / 2 - 3, OFFSET arrowUP
     mov bl, bodyColor[0]
     inc bl
     optionListRolling bl, colorCodeCount
     mov bl, colorCode[bx]
-    INVOKE SetConsoleTextAttribute, consoleHandle, bl
+    INVOKE SetConsoleTextAttribute, consoleHandle, ebx
     INVOKE printMapItem, gameWidth - STYLE_PREVIEW_PADD - 1, gameHeight / 2 + 3, OFFSET arrowDOWN
     .IF playerCount == 2
         mov bl, bodyColor[1]
         dec bl
         optionListRolling bl, colorCodeCount
         mov bl, colorCode[bx]
-        INVOKE SetConsoleTextAttribute, consoleHandle, bl
+        INVOKE SetConsoleTextAttribute, consoleHandle, ebx
         INVOKE printMapItem, STYLE_PREVIEW_PADD, gameHeight / 2 - 3, OFFSET arrowUP
         mov bl, bodyColor[1]
         inc bl
         optionListRolling bl, colorCodeCount
         mov bl, colorCode[bx]
-        INVOKE SetConsoleTextAttribute, consoleHandle, bl
+        INVOKE SetConsoleTextAttribute, consoleHandle, ebx
         INVOKE printMapItem,STYLE_PREVIEW_PADD, gameHeight / 2 + 3, OFFSET arrowDOWN
     .ENDIF
     ;; Reset color
