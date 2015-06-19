@@ -23,19 +23,12 @@ initialize   PROTO
 gameWidth = 40
 gameHeight = 23
 map           SBYTE gameWidth * gameHeight * 2 dup(?)
-head          BYTE ?, ?, ?, ?
-tail          BYTE ?, ?, ?, ?
-direct        SBYTE ?, ?, ?, ?
-forbidDirect  SBYTE ?, ?, ?, ?
-grow          BYTE ?, ?
+
 food          BYTE ?, ?
 speed         BYTE ?
-life          BYTE ?, ?
-earn          WORD ?, ?
 over          BYTE ?
-score         DWORD ?, ?
-leng          WORD ?, ?
-player        BYTE  ?
+player        PLAYER 2 DUP(<>)
+playerCount   BYTE  ?
 
 foodImage     BYTE "¡°", 0
 
@@ -216,60 +209,60 @@ START_turn:
       jmp END_turn
    .ENDIF
 
-   .IF player == 2
+   .IF playerCount == 2
       .IF al == 'w'
-         .IF forbidDirect[2] == 0 && forbidDirect[3] == -1
+         .IF player[TYPE PLAYER].forbidDirect[0] == 0 && player[TYPE PLAYER].forbidDirect[1] == -1
             jmp START_turn
          .ENDIF
-         mov direct[2], 0
-         mov direct[3], -1
+         mov player[TYPE PLAYER].direct[0], 0
+         mov player[TYPE PLAYER].direct[1], -1
       .ELSEIF al == 'd'
-         .IF forbidDirect[2] == 1 && forbidDirect[3] == 0
+         .IF player[TYPE PLAYER].forbidDirect[0] == 1 && player[TYPE PLAYER].forbidDirect[1] == 0
             jmp START_turn
          .ENDIF
-         mov direct[2], 1
-         mov direct[3], 0
+         mov player[TYPE PLAYER].direct[0], 1
+         mov player[TYPE PLAYER].direct[1], 0
       .ELSEIF al == 's'
-         .IF forbidDirect[2] == 0 && forbidDirect[3] == 1
+         .IF player[TYPE PLAYER].forbidDirect[0] == 0 && player[TYPE PLAYER].forbidDirect[1] == 1
             jmp START_turn
          .ENDIF
-         mov direct[2], 0
-         mov direct[3], 1
+         mov player[TYPE PLAYER].direct[0], 0
+         mov player[TYPE PLAYER].direct[1], 1
       .ELSEIF al == 'a'
-         .IF forbidDirect[2] == -1 && forbidDirect[3] == 0
+         .IF player[TYPE PLAYER].forbidDirect[0] == -1 && player[TYPE PLAYER].forbidDirect[1] == 0
             jmp START_turn
          .ENDIF
-         mov direct[2], -1
-         mov direct[3], 0
+         mov player[TYPE PLAYER].direct[0], -1
+         mov player[TYPE PLAYER].direct[1], 0
       .ENDIF
    .ENDIF
 
    .IF al == -32
       call crt__getch
       .IF al == 72 ; white arrow up
-         .IF forbidDirect[0] == 0 && forbidDirect[1] == -1
+         .IF player[0].forbidDirect[0] == 0 && player[0].forbidDirect[1] == -1
             jmp START_turn
          .ENDIF
-         mov direct[0], 0
-         mov direct[1], -1
+         mov player[0].direct[0], 0
+         mov player[0].direct[1], -1
       .ELSEIF al == 80 ; white arrow down
-         .IF forbidDirect[0] == 0 && forbidDirect[1] == 1
+         .IF player[0].forbidDirect[0] == 0 && player[0].forbidDirect[1] == 1
             jmp START_turn
          .ENDIF
-         mov direct[0], 0
-         mov direct[1], 1
+         mov player[0].direct[0], 0
+         mov player[0].direct[1], 1
       .ELSEIF al == 75 ; white arrow left 
-         .IF forbidDirect[0] == -1 && forbidDirect[1] == 0
+         .IF player[0].forbidDirect[0] == -1 && player[0].forbidDirect[1] == 0
             jmp START_turn
          .ENDIF
-         mov direct[0], -1
-         mov direct[1], 0
+         mov player[0].direct[0], -1
+         mov player[0].direct[1], 0
       .ELSEIF al == 77 ; white arrow right
-         .IF forbidDirect[0] == 1 && forbidDirect[1] == 0
+         .IF player[0].forbidDirect[0] == 1 && player[0].forbidDirect[1] == 0
             jmp START_turn
          .ENDIF
-         mov direct[0], 1
-         mov direct[1], 0     
+         mov player[0].direct[0], 1
+         mov player[0].direct[1], 0     
       .ENDIF
    .ENDIF
    jmp START_turn
@@ -349,10 +342,7 @@ initialize PROC USES eax ebx ecx
     LOCAL j:BYTE
 ;initialize the snake game
 ;--------------------------------
-	mov al, 50
-	mov speed, al
-	mov al, 3
-	mov life, al
+	mov speed, 50
 
 	; initilize map array
     mov i, 0
@@ -374,6 +364,8 @@ L1END:
     loop L1
 
 LOUT:
+    mov over, 0
+
 	setMap 18, 9, 0, 19
 	setMap 18, 9, 1, 9
 	setMap 19, 9, 0, 20
@@ -381,28 +373,33 @@ LOUT:
 	setMap 20, 9, 0, 21
 	setMap 20, 9, 1, 9
 	setMap 21, 9, 0, 100
-	mov earn[0], 1
-	mov over, 0
-	mov score[0], 0
-	mov grow[0], 0
-	mov leng[0], 4
-    mov head[0], 21
-    mov head[1], 9
-    mov tail[0], 18
-    mov tail[1], 9
-    mov direct[0], 1
-    mov direct[1], 0
-    mov forbidDirect[0], -1
-    mov forbidDirect[1], 0
+    mov player[0].life, 3
+    mov player[0].earn, 1
+    mov player[0].score, 0
+    mov player[0].grow, 0
+    mov player[0].leng, 4
+    mov player[0].head[0], 21
+    mov player[0].head[1], 9
+    mov player[0].tail[0], 18
+    mov player[0].tail[1], 9
+    mov player[0].direct[0], 1
+    mov player[0].direct[1], 0
+    mov player[0].forbidDirect[0], -1
+    mov player[0].forbidDirect[1], 0
+    
+    INVOKE lstrcpy, ADDR player[0].headImage, ADDR headImage
+    mov player[0].color, 15
+
 	INVOKE printString, 15, 0, ADDR scoreMsg
-	mov eax, score[0]
+	mov eax, player[0].score
 	INVOKE printInteger, 21, 0, eax
 	INVOKE printString, 35, 0, ADDR lengthMsg
-	movzx eax, leng[0]
+	movzx eax, player[0].leng
 	INVOKE printInteger, 42, 0, eax
 	INVOKE printString, 55, 0, ADDR lifeMsg
-	movzx eax, life[0]
+	movzx eax, player[0].life
 	INVOKE printInteger, 60, 0, eax
+
     movzx eax, colorStyle
     movzx eax, colorCode[eax]
     INVOKE SetConsoleTextAttribute, consoleHandle, eax
@@ -412,9 +409,8 @@ LOUT:
     INVOKE SetConsoleTextAttribute, consoleHandle, 7
     INVOKE printString, 42, 10, ADDR headP1Image
 
-	.IF player == 2
+	.IF playerCount == 2
 
-        mov score[4], 0
         setMap 18, 12, 0, 19
         setMap 18, 12, 1, 12
         setMap 19, 12, 0, 20
@@ -422,26 +418,31 @@ LOUT:
         setMap 20, 12, 0, 21
         setMap 20, 12, 1, 12
         setMap 21, 12, 0, 100
-        mov head[2], 21
-        mov head[3], 12
-        mov tail[2], 18
-        mov tail[3], 12
-        mov direct[2], 1
-        mov direct[3], 0
-        mov forbidDirect[2], -1
-        mov forbidDirect[3], 0
-        mov grow[1], 0
-        mov leng[2], 4
-        mov earn[2], 1
-        mov life[1], 3
+        mov player[TYPE PLAYER].earn, 1
+        mov player[TYPE PLAYER].life, 3
+        mov player[TYPE PLAYER].score, 0
+        mov player[TYPE PLAYER].grow, 0
+        mov player[TYPE PLAYER].leng, 4
+        mov player[TYPE PLAYER].head[0], 21
+        mov player[TYPE PLAYER].head[1], 12
+        mov player[TYPE PLAYER].tail[0], 18
+        mov player[TYPE PLAYER].tail[1], 12
+        mov player[TYPE PLAYER].direct[0], 1
+        mov player[TYPE PLAYER].direct[1], 0
+        mov player[TYPE PLAYER].forbidDirect[0], -1
+        mov player[TYPE PLAYER].forbidDirect[1], 0
+
+        INVOKE lstrcpy, ADDR player[TYPE PLAYER].headImage, ADDR headImage[3]
+        mov player[TYPE PLAYER].color, 15
+        
         INVOKE printString, 15, 24, ADDR scoreMsg
-	    mov eax, score[4]
+	    mov eax, player[TYPE PLAYER].score
 	    INVOKE printInteger, 21, 24, eax
 	    INVOKE printString, 35, 24, ADDR lengthMsg
-	    movzx eax, leng[2]
+	    movzx eax, player[TYPE PLAYER].leng
 	    INVOKE printInteger, 42, 24, eax
 	    INVOKE printString, 55, 24, ADDR lifeMsg
-	    movzx eax, life[1]
+	    movzx eax, player[TYPE PLAYER].life
 	    INVOKE printInteger, 60, 24, eax
         movzx eax, colorStyle[1]
         movzx eax, colorCode[eax]
@@ -472,11 +473,15 @@ revive PROC USES eax ebx ecx edx,
 ;mode: revived player 0 ~ 1
 ;------------------------------------
     
-    movzx ebx, mode
-    mov leng[ebx*2], 4
-    mov al, tail[ebx*2]
+    mov al, mode
+    mov bl, TYPE PLAYER
+    mul bl
+    movzx ebx, ax
+
+    mov player[ebx].leng, 4
+    mov al, player[ebx].tail[0]
     mov tmp1[0], al
-    mov al, tail[ebx*2 + 1]
+    mov al, player[ebx].tail[1]
     mov tmp1[1], al
     mov ecx, 3
 
@@ -492,21 +497,21 @@ L:
     loop L
     
     mov al, tmp1[0]
-    mov head[ebx*2], al
+    mov player[ebx].head[0], al
     mov al, tmp1[1]
-    mov head[ebx*2+1], al
+    mov player[ebx].head[1], al
     mov al, tmp1[0]
     sub al, tmp2[0]
-    mov direct[ebx*2], al
+    mov player[ebx].direct[0], al
     mov al, tmp1[1]
     sub al, tmp2[1]
-    mov direct[ebx*2+1], al
-    mov al, direct[ebx*2]
+    mov player[ebx].direct[1], al
+    mov al, player[ebx].direct[0]
     neg al
-    mov forbidDirect[ebx*2], al
-    mov al, direct[ebx*2+1]
+    mov player[ebx].forbidDirect[0], al
+    mov al, player[ebx].direct[1]
     neg al
-    mov forbidDirect[ebx*2+1], al
+    mov player[ebx].forbidDirect[1], al
         
     getMap tmp1[0], tmp1[1], 0
     .IF al != 100
@@ -541,13 +546,9 @@ LOUT:
         setMap tmp1[0], tmp1[1], 0, -1
         INVOKE printMapItem, tmp1[0], tmp1[1], ADDR space2
     .ENDIF
-    setMap head[ebx*2], head[ebx*2+1], 0, 100
+    setMap player[ebx].head[0], player[ebx].head[1], 0, 100
 
-    .IF mode == 1
-        INVOKE printMapItem, head[ebx*2], head[ebx*2+1], ADDR headP1Image
-    .ELSEIF mode == 2
-        INVOKE printMapItem, head[ebx*2], head[ebx*2+1], ADDR headP2Image
-    .ENDIF
+    INVOKE printMapItem, player[ebx].head[0], player[ebx].head[1], ADDR player[ebx].headImage
 
     .IF food == 100
         INVOKE foodRevive
@@ -570,32 +571,32 @@ START_move:
     INVOKE Sleep, eax
 
     mov ax, 0
-    mov al, head[0]
-    add al, direct[0]
+    mov al, player[0].head[0]
+    add al, player[0].direct[0]
     add al, 40
     mov bl, 40
     div bl
     mov th[0], ah
 
     mov ax, 0
-    mov al, head[1]
-    add al, direct[1]
+    mov al, player[0].head[1]
+    add al, player[0].direct[1]
     add al, 23
     mov bl, 23
     div bl
     mov th[1], ah
 
     mov ax, 0
-    mov al, head[2]
-    add al, direct[2]
+    mov al, player[TYPE PLAYER].head[0]
+    add al, player[TYPE PLAYER].direct[0]
     add al, 40
     mov bl, 40
     div bl
     mov th[2], ah
 
     mov ax, 0
-    mov al, head[3]
-    add al, direct[3]
+    mov al, player[TYPE PLAYER].head[1]
+    add al, player[TYPE PLAYER].direct[1]
     add al, 23
     mov bl, 23
     div bl
@@ -609,29 +610,30 @@ START_move:
     mov dl, th[3]
     getMap th[0], th[1], 0
 
-    .IF player == 2 && ((bh != -1 && bh != -2 && bl != -1 && bl != -2) || (th[0] == dh && th[1] == dl))
+    .IF playerCount == 2 && ((bh != -1 && bh != -2 && bl != -1 && bl != -2) || (th[0] == dh && th[1] == dl))
 
-        dec life
-        dec life[1]
-        shr score, 1
-        shr score[4], 1
+        dec player[0].life
+        dec player[TYPE PLAYER].life
+        shr player[0].score, 1
+        shr player[1].score, 1
 
-        .IF life == 0 || life[1] == 0
+        .IF player[0].life == 0 || player[TYPE PLAYER].life == 0
             jmp END_move
         .ENDIF
+
         INVOKE printString, 21, 0, OFFSET space13
         INVOKE printString, 21, 24, OFFSET space13
-        mov eax, score
+        mov eax, player[0].score
         INVOKE printInteger, 21, 0, eax
-        mov eax, score[4]
+        mov eax, player[TYPE PLAYER].score
         INVOKE printInteger, 21, 24, eax
         INVOKE printString, 42, 0, OFFSET space13
         INVOKE printString, 42, 24, OFFSET space13
         INVOKE printInteger, 42, 0, 4
         INVOKE printInteger, 42, 24, 4
-        movzx eax, life
+        movzx eax, player[0].life
         INVOKE printInteger, 60, 0, eax
-        movzx eax, life[1]
+        movzx eax, player[TYPE PLAYER].life
         INVOKE printInteger, 60, 24, eax
         INVOKE revive, 0
         INVOKE revive, 1
@@ -640,25 +642,25 @@ START_move:
 
     .ELSEIF al != -1 && al != -2
 
-        .IF player == 2
+        .IF playerCount == 2
 
-            shr score, 1
-            mov eax, score
-            add score[4], eax
-            dec life
-            .IF life == 0
+            shr player[0].score, 1
+            mov eax, player[0].score
+            add player[TYPE PLAYER].score, eax
+            dec player[0].life
+            .IF player[0].life == 0
                 jmp END_move
             .ENDIF
 
             INVOKE printString, 21, 0, OFFSET space13
             INVOKE printString, 21, 24, OFFSET space13
-            mov eax, score
+            mov eax, player[0].score
             INVOKE printInteger, 21, 0, eax
-            mov eax, score[4]
+            mov eax, player[TYPE PLAYER].score
             INVOKE printInteger, 21, 24, eax
             INVOKE printString, 42, 0, OFFSET space13
             INVOKE printInteger, 42, 0, 4
-            movzx eax, life
+            movzx eax, player[0].life
             INVOKE printInteger, 60, 0, eax
             INVOKE revive, 0
             call waiting
@@ -666,18 +668,18 @@ START_move:
 
         .ELSE
 
-            dec life
-            .IF life == 0
-            jmp END_move
+            dec player[0].life
+            .IF player[0].life == 0
+                jmp END_move
             .ENDIF
 
-            shr score, 1
+            shr player[0].score, 1
             INVOKE printString, 21, 0, OFFSET space13
-            mov eax, score
+            mov eax, player[0].score
             INVOKE printInteger, 21, 0, eax
             INVOKE printString, 42, 0, OFFSET space13
             INVOKE printInteger, 42, 0, 4
-            movzx eax, life
+            movzx eax, player[0].life
             INVOKE printInteger, 60, 0, eax
             INVOKE revive, 0
             call waiting
@@ -685,26 +687,26 @@ START_move:
 
         .ENDIF
 
-    .ELSEIF player == 2 && bl != -1 && bl != -2
+    .ELSEIF playerCount == 2 && bl != -1 && bl != -2
 
-        shr score[4], 1
-        mov eax, score[4]
-        add score, eax
-        dec life[1]
+        shr player[TYPE PLAYER].score, 1
+        mov eax, player[TYPE PLAYER].score
+        add player[0].score, eax
+        dec player[TYPE PLAYER].life
 
-        .IF life[1] == 0
+        .IF player[TYPE PLAYER].life == 0
             jmp END_move
         .ENDIF
 
         INVOKE printString, 21, 0, OFFSET space13
         INVOKE printString, 21, 24, OFFSET space13
-        mov eax, score
+        mov eax, player[0].score
         INVOKE printInteger, 21, 0, eax
-        mov eax, score[4]
+        mov eax, player[TYPE PLAYER].score
         INVOKE printInteger, 21, 24, eax
         INVOKE printString, 42, 24, OFFSET space13
         INVOKE printInteger, 42, 24, 4
-        movzx eax, life[1]
+        movzx eax, player[TYPE PLAYER].life
         INVOKE printInteger, 60, 24, eax
         INVOKE revive, 1
         call waiting
@@ -714,114 +716,132 @@ START_move:
 
 
     ; draw body
-    mov ebx, 0
+    mov ecx, 0
 DRAW_BODY:
-    .IF bl == player
+    .IF cl == playerCount
         jmp END_DRAW_BODY
     .ENDIF
 
-    movzx eax, colorStyle[ebx]
-    movzx eax, colorCode[eax]
+    mov al, cl
+    mov bl, TYPE PLAYER
+    mul bl
+    movzx ebx, ax
+
+    movzx eax, player[ebx].color
+    push ecx
     INVOKE SetConsoleTextAttribute, consoleHandle, eax
-    INVOKE printMapItem, head[ebx*2], head[ebx*2+1], ADDR bodyImage
+    pop ecx
+    INVOKE printMapItem, player[ebx].head[0], player[ebx].head[1], ADDR bodyImage
+    push ecx
     INVOKE SetConsoleTextAttribute, consoleHandle, 7
-    mov dl, th[ebx*2]
-    setMap head[ebx*2], head[ebx*2+1], 0, dl
-    mov dl, th[ebx*2+1]
-    setMap head[ebx*2], head[ebx*2+1], 1, dl
-    mov al, th[ebx*2]
-    mov head[ebx*2], al
-    mov al, th[ebx*2+1]
-    mov head[ebx*2+1], al
+    pop ecx
+    mov dl, th[ecx*2]
+    setMap player[ebx].head[0], player[ebx].head[1], 0, dl
+    mov dl, th[ecx*2+1]
+    setMap player[ebx].head[0], player[ebx].head[1], 1, dl
+    mov al, th[ecx*2]
+    mov player[ebx].head[0], al
+    mov al, th[ecx*2+1]
+    mov player[ebx].head[1], al
     
-    inc ebx
+    inc ecx
     jmp DRAW_BODY
 
 END_DRAW_BODY:
     ; draw head
-    mov ebx, 0
+    mov ecx, 0
 DRAW_HEAD:
-    .IF bl == player
+    .IF cl == playerCount
         jmp END_DRAW_HEAD
     .ENDIF
 
-    setMap head[ebx*2], head[ebx*2+1], 0, 100
-    .IF bl == 0
-        INVOKE printMapItem, head[ebx*2], head[ebx*2+1], ADDR headP1Image
-    .ELSEIF bl == 1
-        INVOKE printMapItem, head[ebx*2], head[ebx*2+1], ADDR headP2Image
-    .ENDIF
+    mov al, cl
+    mov bl, TYPE PLAYER
+    mul bl
+    movzx ebx, ax
 
-    mov al, direct[ebx*2]
+    setMap player[ebx].head[0], player[ebx].head[1], 0, 100
+    INVOKE printMapItem, player[ebx].head[0], player[ebx].head[1], ADDR player[ebx].headImage
+    mov al, player[ebx].direct[0]
     neg al
-    mov forbidDirect[ebx*2], al
-    mov al, direct[ebx*2+1]
+    mov player[ebx].forbidDirect[0], al
+    mov al, player[ebx].direct[1]
     neg al
-    mov forbidDirect[ebx*2+1], al
+    mov player[ebx].forbidDirect[1], al
 
-    inc ebx
+    inc ecx
     jmp DRAW_HEAD
 
 END_DRAW_HEAD:
     ; grow
-    mov ebx, 0
+    mov ecx, 0
 GROW:
-    .IF bl == player
+    .IF cl == playerCount
         jmp END_GROW
     .ENDIF
 
-    .IF grow[ebx]
+    mov al, cl
+    mov bl, TYPE PLAYER
+    mul bl
+    movzx ebx, ax
 
-        dec grow[ebx]
-        inc leng[ebx*2]
-        movzx eax, leng[ebx*2]
-        .IF bl == 0
+    .IF player[ebx].grow
+
+        dec player[ebx].grow
+        inc player[ebx].leng
+        movzx eax, player[ebx].leng
+        .IF cl == 0
             INVOKE printInteger, 42, 0, eax
-        .ELSEIF bl == 1
+        .ELSEIF cl == 1
             INVOKE printInteger, 42, 24, eax
         .ENDIF
 
     .ELSE
 
-        INVOKE printMapItem, tail[ebx*2], tail[ebx*2+1], ADDR space2
-        mov al, tail[ebx*2]
+        INVOKE printMapItem, player[ebx].tail[0], player[ebx].tail[1], ADDR space2
+        mov al, player[ebx].tail[0]
         mov tmp[0], al
-        mov al, tail[ebx*2+1]
+        mov al, player[ebx].tail[1]
         mov tmp[1], al
         getMap tmp[0], tmp[1], 0
-        mov tail[ebx*2], al
+        mov player[ebx].tail[0], al
         getMap tmp[0], tmp[1], 1
-        mov tail[ebx*2+1], al
+        mov player[ebx].tail[1], al
         setMap tmp[0], tmp[1], 0, -1
 
     .ENDIF
 
-    inc ebx
+    inc ecx
     jmp GROW
 
 END_GROW:
     ; get food
-    mov ebx, 0
+    mov ecx, 0
 GET_FOOD:
-    .IF player == bl
+    .IF playerCount == cl
         jmp START_move
     .ENDIF
 
+    mov al, cl
+    mov bl, TYPE PLAYER
+    mul bl
+    movzx ebx, ax
+
     mov ah, food[0]
     mov al, food[1]
-    .IF head[ebx*2] == ah && head[ebx*2+1] == al
+    .IF player[ebx].head[0] == ah && player[ebx].head[1] == al
 
-        add grow[ebx], 3
-        movzx eax, earn[ebx*2]
-        add score[ebx*4], eax
-        inc earn[ebx*2]
-        mov eax, score[ebx*4]
+        add player[ebx].grow, 3
+        movzx eax, player[ebx].earn
+        add player[ebx].score, eax
+        inc player[ebx].earn
+        mov eax, player[ebx].score
         INVOKE printInteger, 21, 0, eax
         INVOKE foodRevive
 
     .ENDIF
 
-    inc ebx
+    inc ecx
     jmp GET_FOOD
 
 END_move:
@@ -851,15 +871,15 @@ paint PROC USES eax ebx ecx edx esi,
     LOCAL xx:BYTE
     
     mov al, x
-    mov head[0], al
+    mov player[0].head[0], al
     mov al, y
-    mov head[1], al
+    mov player[0].head[1], al
 
     mov al, 2
-    mov dl, head[0]
+    mov dl, player[0].head[0]
     mul dl
     mov xx, al
-    INVOKE printString, xx, head[1], ADDR headP1Image
+    INVOKE printString, xx, player[0].head[1], ADDR headP1Image
 
     mov esi, route
 LWHILE:
@@ -870,27 +890,27 @@ LWHILE:
         
         INVOKE Sleep, 20
         mov al, 2
-        mov dl, head[0]
+        mov dl, player[0].head[0]
         mul dl
         mov xx, al
-        INVOKE printString, xx, head[1], ADDR bodyImage
+        INVOKE printString, xx, player[0].head[1], ADDR bodyImage
 
         mov al, [esi]
         .IF al == 'u'
-            dec head[1]
+            dec player[0].head[1]
         .ELSEIF al == 'd'
-            inc head[1]
+            inc player[0].head[1]
         .ELSEIF al == 'l'
-            dec head[0]
+            dec player[0].head[0]
         .ELSEIF al == 'r'
-            inc head[0]
+            inc player[0].head[0]
         .ENDIF
 
         mov al, 2
-        mov dl, head[0]
+        mov dl, player[0].head[0]
         mul dl
         mov xx, al
-        INVOKE printString, xx, head[1], ADDR headP1Image
+        INVOKE printString, xx, player[0].head[1], ADDR headP1Image
 
         inc esi
 
@@ -899,10 +919,10 @@ LWHILE:
 LOUT:
     INVOKE Sleep, 20
     mov al, 2
-    mov dl, head[0]
+    mov dl, player[0].head[0]
     mul dl
     mov xx, al
-    INVOKE printString, xx, head[1], ADDR bodyImage
+    INVOKE printString, xx, player[0].head[1], ADDR bodyImage
 
     ret
 paint ENDP
@@ -912,31 +932,31 @@ gameover PROC USES eax
     ; TODO score = life * 100 did not implement yet
 
     INVOKE printString, 15, 0, ADDR scoreMsg
-    mov eax, score
+    mov eax, player[0].score
     INVOKE printInteger, 21, 0, eax
     INVOKE printString, 35, 0, ADDR lengthMsg
-    movzx eax, leng
+    movzx eax, player[0].leng
     INVOKE printInteger, 42, 0, eax
     INVOKE printString, 55, 0, ADDR lifeMsg
-    movzx eax, life
+    movzx eax, player[0].life
     INVOKE printInteger, 60, 0, eax
 
-    .IF player == 2
+    .IF playerCount == 2
 
         INVOKE printString, 15, 24, ADDR scoreMsg
-        mov eax, score + TYPE score 
+        mov eax, player[TYPE PLAYER].score
         INVOKE printInteger, 21, 24, eax
         INVOKE printString, 35, 24, ADDR lengthMsg
-        movzx eax, leng + TYPE leng
+        movzx eax, player[TYPE PLAYER].leng
         INVOKE printInteger, 42, 24, eax
         INVOKE printString, 55, 24, ADDR lifeMsg
-        movzx eax, life + TYPE life
+        movzx eax, player[TYPE PLAYER].life
         INVOKE printInteger, 61, 24, eax
 
-        mov eax, score + TYPE score
-        .IF eax == score
+        mov eax, player[TYPE PLAYER].score
+        .IF eax == player[0].score
             INVOKE printString, 38, 2, ADDR tieMsg
-        .ELSEIF eax > score
+        .ELSEIF eax > player[0].score
             INVOKE printString, 36, 2, ADDR p2WinMsg
         .ELSE
             INVOKE printString, 36, 2, ADDR p1WinMsg
@@ -1182,12 +1202,12 @@ LWHILE:
 
             .IF menuSelect == 0
                     
-                mov player, 1
+                mov playerCount, 1
                 jmp LOUT
 
             .ELSEIF menuSelect == 1
 
-                mov player, 2
+                mov playerCount, 2
                 jmp LOUT
 
             .ELSEIF menuSelect == 2
@@ -1249,6 +1269,7 @@ start@0 PROC
     INVOKE GetConsoleCursorInfo, consoleHandle, ADDR structCursorInfo
     mov structCursorInfo.bVisible, FALSE
     INVOKE SetConsoleCursorInfo, consoleHandle, ADDR structCursorInfo
+
 PMENU:
     INVOKE menu
 restart:
