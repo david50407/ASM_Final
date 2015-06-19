@@ -41,10 +41,6 @@ idk           BYTE "¢i", 0
 space         BYTE " ", 0
 space2        BYTE "  ", 0
 space13       BYTE "             ", 0
-headP1Image   BYTE "¡·", 0
-headP2Image   BYTE "¡ó", 0
-colorP1       BYTE 0
-colorP2       BYTE 0
 bodyImage     BYTE "¡´", 0
 waitMsg       BYTE "Wait:", 0
 p1WinMsg      BYTE "1P wins", 0
@@ -381,9 +377,6 @@ LOUT:
     mov player[0].direct[1], 0
     mov player[0].forbidDirect[0], -1
     mov player[0].forbidDirect[1], 0
-    
-    INVOKE lstrcpy, ADDR player[0].headImage, ADDR headImage
-    mov player[0].color, 15
 
 	INVOKE printString, 15, 0, ADDR scoreMsg
 	mov eax, player[0].score
@@ -400,8 +393,8 @@ LOUT:
     INVOKE printString, 36, 10, ADDR bodyImage
     INVOKE printString, 38, 10, ADDR bodyImage
     INVOKE printString, 40, 10, ADDR bodyImage
-    INVOKE SetConsoleTextAttribute, consoleHandle, 7
     INVOKE printString, 42, 10, ADDR player[0].headImage
+    INVOKE SetConsoleTextAttribute, consoleHandle, COLOR_WHITE
 
 	.IF playerCount == 2
 
@@ -425,9 +418,6 @@ LOUT:
         mov player[SIZEOF PLAYER].direct[1], 0
         mov player[SIZEOF PLAYER].forbidDirect[0], -1
         mov player[SIZEOF PLAYER].forbidDirect[1], 0
-
-        INVOKE lstrcpy, ADDR player[SIZEOF PLAYER].headImage, ADDR headImage[3]
-        mov player[SIZEOF PLAYER].color, 15
         
         INVOKE printString, 15, 24, ADDR scoreMsg
 	    mov eax, player[SIZEOF PLAYER].score
@@ -443,8 +433,8 @@ LOUT:
         INVOKE printString, 36, 13, ADDR bodyImage
         INVOKE printString, 38, 13, ADDR bodyImage
         INVOKE printString, 40, 13, ADDR bodyImage
-        INVOKE SetConsoleTextAttribute, consoleHandle, 7
         INVOKE printString, 42, 13, ADDR player[SIZEOF PLAYER].headImage
+        INVOKE SetConsoleTextAttribute, consoleHandle, COLOR_WHITE
 
     .ENDIF
 
@@ -872,7 +862,7 @@ paint PROC USES eax ebx ecx edx esi,
     mov dl, player[0].head[0]
     mul dl
     mov xx, al
-    INVOKE printString, xx, player[0].head[1], ADDR headP1Image
+    INVOKE printString, xx, player[0].head[1], ADDR player[0].headImage
 
     mov esi, route
 LWHILE:
@@ -903,7 +893,7 @@ LWHILE:
         mov dl, player[0].head[0]
         mul dl
         mov xx, al
-        INVOKE printString, xx, player[0].head[1], ADDR headP1Image
+        INVOKE printString, xx, player[0].head[1], ADDR player[0].headImage
 
         inc esi
 
@@ -1076,29 +1066,24 @@ DRAW:
     ; Save setting immediately BEGIN
     xor eax, eax
     xor ebx, ebx
-    cld
     mov al, headStyle[0]
     mulb 3
     mov esi, OFFSET headImage
     add esi, eax
-    mov edi, OFFSET headP1Image
-    mov ecx, 2
-    rep movsb
+    INVOKE lstrcpy, ADDR player[0].headImage, esi
     mov bl, bodyColor[0]
     mov bl, colorCode[bx]
-    mov colorP1, bl
+    mov player[0].color, bl
     .IF playerCount == 2
-        cld
+        xor eax, eax
         mov al, headStyle[1]
         mulb 3
         mov esi, OFFSET headImage
         add esi, eax
-        mov edi, OFFSET headP2Image
-        mov ecx, 2
-        rep movsb
+        INVOKE lstrcpy, ADDR player[SIZEOF PLAYER].headImage, esi
         mov bl, bodyColor[1]
         mov bl, colorCode[bx]
-        mov colorP2, bl
+        mov player[SIZEOF PLAYER].color, bl
     .ENDIF
     ; Save setting immediately END
 
@@ -1112,7 +1097,7 @@ LOOP_ARROW:
         push eax
         push ecx
         push edx
-        INVOKE SetConsoleTextAttribute, consoleHandle, colorP1
+        INVOKE SetConsoleTextAttribute, consoleHandle, player[0].color
         pop edx
         pop ecx
         pop eax
@@ -1133,7 +1118,7 @@ LOOP_ARROW2:
             push eax
             push ecx
             push edx
-            INVOKE SetConsoleTextAttribute, consoleHandle, colorP2
+            INVOKE SetConsoleTextAttribute, consoleHandle, player[SIZEOF PLAYER].color
             pop edx
             pop ecx
             pop eax
@@ -1149,13 +1134,13 @@ LOOP_ARROW2:
 
     ; Print preview BEGIN
     ;; Head / Body
-    INVOKE SetConsoleTextAttribute, consoleHandle, colorP1
+    INVOKE SetConsoleTextAttribute, consoleHandle, player[0].color
     INVOKE printMapItem, gameWidth - STYLE_PREVIEW_PADD - 1, gameHeight / 2 - 1, OFFSET bodyImage
     INVOKE printMapItem, gameWidth - STYLE_PREVIEW_PADD - 1, gameHeight / 2    , OFFSET bodyImage
-    INVOKE printMapItem, gameWidth - STYLE_PREVIEW_PADD - 1, gameHeight / 2 + 1, OFFSET headP1Image
+    INVOKE printMapItem, gameWidth - STYLE_PREVIEW_PADD - 1, gameHeight / 2 + 1, ADDR player[0].headImage
     .IF playerCount == 2
-        INVOKE SetConsoleTextAttribute, consoleHandle, colorP2
-        INVOKE printMapItem, STYLE_PREVIEW_PADD, gameHeight / 2 - 1, OFFSET headP2Image
+        INVOKE SetConsoleTextAttribute, consoleHandle, player[SIZEOF PLAYER].color
+        INVOKE printMapItem, STYLE_PREVIEW_PADD, gameHeight / 2 - 1, ADDR player[SIZEOF PLAYER].headImage
         INVOKE printMapItem, STYLE_PREVIEW_PADD, gameHeight / 2    , OFFSET bodyImage
         INVOKE printMapItem, STYLE_PREVIEW_PADD, gameHeight / 2 + 1, OFFSET bodyImage
     .ENDIF
